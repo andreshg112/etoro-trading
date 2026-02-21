@@ -1,0 +1,11 @@
+.git/**
+.github/**
+.gitignore
+deploy.sh
+eslint.config.js
+jsconfig.json
+node_modules/**
+package.json
+package-lock.json
+README.md
+tests/**
