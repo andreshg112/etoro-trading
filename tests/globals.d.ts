@@ -32,11 +32,15 @@ declare function getHistoricalCandles(
     count?: number,
 ): EtoroCandleResponse
 declare function getDemoPortfolio(): EtoroPortfolioResponse
+declare function isMarketOpen(): boolean
+
 declare function openDemoPosition(
     instrumentId: number,
     amount: number,
     isBuy?: boolean,
     leverage?: number,
+    stopLossRate?: number,
+    takeProfitRate?: number,
 ): EtoroOrderResult
 declare function closeDemoPosition(
     positionId: number,

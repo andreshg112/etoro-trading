@@ -218,6 +218,47 @@ function runTests() {
             openDemoPosition(1234, 100, true, 1)
             assertContains(capturedRequests[0].url, '/demo/')
         })
+
+        it('Should include StopLossRate in payload when provided', () => {
+            resetMocks()
+            mockResponse(200, { orderId: 999 })
+            openDemoPosition(1234, 500, true, 1, 480, 0)
+            var payload = JSON.parse(capturedRequests[0].options.payload)
+            assertEqual(payload.StopLossRate, 480)
+        })
+
+        it('Should include TakeProfitRate in payload when provided', () => {
+            resetMocks()
+            mockResponse(200, { orderId: 999 })
+            openDemoPosition(1234, 500, true, 1, 0, 520)
+            var payload = JSON.parse(capturedRequests[0].options.payload)
+            assertEqual(payload.TakeProfitRate, 520)
+        })
+
+        it('Should include both SL and TP in payload when provided', () => {
+            resetMocks()
+            mockResponse(200, { orderId: 999 })
+            openDemoPosition(1234, 500, true, 1, 480, 520)
+            var payload = JSON.parse(capturedRequests[0].options.payload)
+            assertEqual(payload.StopLossRate, 480)
+            assertEqual(payload.TakeProfitRate, 520)
+        })
+
+        it('Should omit StopLossRate from payload when 0', () => {
+            resetMocks()
+            mockResponse(200, { orderId: 999 })
+            openDemoPosition(1234, 500, true, 1, 0, 0)
+            var payload = JSON.parse(capturedRequests[0].options.payload)
+            assertEqual(payload.StopLossRate, undefined)
+        })
+
+        it('Should omit TakeProfitRate from payload when not provided', () => {
+            resetMocks()
+            mockResponse(200, { orderId: 999 })
+            openDemoPosition(1234, 500, true, 1)
+            var payload = JSON.parse(capturedRequests[0].options.payload)
+            assertEqual(payload.TakeProfitRate, undefined)
+        })
     })
 
     describe('closeDemoPosition', () => {

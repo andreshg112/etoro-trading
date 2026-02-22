@@ -230,7 +230,17 @@ export function installGasMocks(options = {}) {
         }),
     }
 
-    global.Utilities = { getUuid: () => uuid }
+    global.Utilities = {
+        getUuid: () => uuid,
+        formatDate: (
+            // eslint-disable-next-line no-unused-vars
+            /** @type {Date} */ _date,
+            // eslint-disable-next-line no-unused-vars
+            /** @type {string} */ _tz,
+            // eslint-disable-next-line no-unused-vars
+            /** @type {string} */ _fmt,
+        ) => 'Mon,10,00',
+    }
 
     global.UrlFetchApp = {
         fetch: (/** @type {string} */ url, /** @type {any} */ opts) => {

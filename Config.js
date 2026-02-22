@@ -42,6 +42,32 @@ function getEtoroHeaders() {
 }
 
 /**
+ * Checks whether US stock markets are currently open.
+ * Markets are open Monday–Friday, 09:30–16:00 Eastern Time.
+ * @returns {boolean}
+ */
+function isMarketOpen() {
+    var now = new Date()
+    var nyTime = Utilities.formatDate(now, 'America/New_York', 'EEE,HH,mm')
+    var parts = nyTime.split(',')
+    var day = parts[0]
+    var hour = parseInt(parts[1], 10)
+    var minute = parseInt(parts[2], 10)
+
+    // Weekend check (Sat/Sun)
+    if (day === 'Sat' || day === 'Sun') {
+        return false
+    }
+
+    // Convert to minutes since midnight for easy range comparison
+    var timeInMinutes = hour * 60 + minute
+    var marketOpen = 9 * 60 + 30 // 09:30
+    var marketClose = 16 * 60 // 16:00
+
+    return timeInMinutes >= marketOpen && timeInMinutes < marketClose
+}
+
+/**
  * Makes an authenticated request to the eToro Public API.
  * @param {string} endpoint - API path (e.g. '/api/v1/market-data/search')
  * @param {string} [method='get'] - HTTP method

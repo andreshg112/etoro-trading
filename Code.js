@@ -32,7 +32,14 @@ function executeDecision(decision) {
 
         try {
             if (action.type === 'BUY') {
-                var buyResult = openDemoPosition(action.instrumentId, action.amount, true, 1)
+                var buyResult = openDemoPosition(
+                    action.instrumentId,
+                    action.amount,
+                    true,
+                    1,
+                    action.stopLossRate,
+                    action.takeProfitRate,
+                )
                 Logger.log('     BUY order placed: ' + JSON.stringify(buyResult))
             } else if (action.type === 'SELL_CLOSE') {
                 var closeResult = closeDemoPosition(action.positionId)
@@ -56,6 +63,13 @@ function main() {
     Logger.log('=== eToro & Gemini Trading Bot - Execution Started ===')
 
     try {
+        // 0. Check if US markets are open
+        if (!isMarketOpen()) {
+            Logger.log('US markets are currently closed. Skipping execution.')
+            Logger.log('=== Execution Complete ===')
+            return
+        }
+
         // 1. Resolve instrument IDs for watchlist symbols
         Logger.log('Step 1/6: Resolving instrument IDs for watchlist...')
         /** @type {InstrumentMap} */
@@ -80,12 +94,12 @@ function main() {
         Logger.log('  Received rates for ' + ratesData.rates.length + ' instruments.')
 
         // 3. Fetch historical candles for each instrument
-        Logger.log('Step 3/6: Fetching historical candles (20 daily)...')
+        Logger.log('Step 3/6: Fetching historical candles (20 hourly)...')
         /** @type {CandlesMap} */
         var candlesMap = {}
         for (var symbol in instrumentMap) {
             try {
-                candlesMap[symbol] = getHistoricalCandles(instrumentMap[symbol], 'OneDay', 20)
+                candlesMap[symbol] = getHistoricalCandles(instrumentMap[symbol], 'OneHour', 20)
             } catch (e) {
                 Logger.log('  WARNING: Could not fetch candles for ' + symbol + ': ' + e.message)
             }

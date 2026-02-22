@@ -46,7 +46,7 @@ export default [
                 'warn',
                 {
                     varsIgnorePattern:
-                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|getScriptProperty|getEtoroHeaders|etoroFetch)$',
+                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|getScriptProperty|getEtoroHeaders|etoroFetch|isMarketOpen)$',
                 },
             ],
         },
@@ -102,6 +102,7 @@ export default [
                 searchInstrument: 'readonly',
                 askGemini: 'readonly',
                 buildGeminiPrompt: 'readonly',
+                isMarketOpen: 'readonly',
             },
         },
     },

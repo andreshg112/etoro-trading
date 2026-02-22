@@ -8,6 +8,7 @@ import {
     describe,
     it,
     assert,
+    assertEqual,
     assertContains,
     printSummary,
     loadSourceFiles,
@@ -73,6 +74,8 @@ function runTests() {
                         symbol: 'VOO',
                         instrumentId: 1234,
                         amount: 500,
+                        stopLossRate: 480,
+                        takeProfitRate: 520,
                         reason: 'Strong uptrend',
                     },
                 ],
@@ -88,6 +91,15 @@ function runTests() {
                 return r.url.includes('market-open-orders')
             })
             assert(openReqs.length > 0, 'Should have called open orders endpoint')
+        })
+
+        it('Should pass stopLossRate and takeProfitRate to open position', () => {
+            var openReqs = capturedRequests.filter(function (r) {
+                return r.url.includes('market-open-orders')
+            })
+            var payload = JSON.parse(openReqs[0].options.payload)
+            assertEqual(payload.StopLossRate, 480)
+            assertEqual(payload.TakeProfitRate, 520)
         })
 
         it('Should log the analysis', () => {
@@ -208,8 +220,29 @@ function runTests() {
         })
     })
 
+    describe('main — skips when market is closed', () => {
+        resetMocks()
+
+        it('Should skip execution when market is closed', () => {
+            global.Utilities.formatDate = () => 'Sat,12,00'
+            main()
+            var log = getLogText()
+            assertContains(log, 'markets are currently closed')
+            assertContains(log, 'Execution Complete')
+        })
+
+        it('Should not call any API endpoints when market is closed', () => {
+            resetMocks()
+            global.Utilities.formatDate = () => 'Sun,10,00'
+            main()
+            assertEqual(capturedRequests.length, 0)
+        })
+    })
+
     describe('main — full pipeline (integration)', () => {
         resetMocks()
+        // Mock Utilities.formatDate to return a weekday during market hours
+        global.Utilities.formatDate = () => 'Mon,10,00'
 
         // Mock searchInstrument for each watchlist symbol
         registerMockResponse('market-data/search', 200, {
@@ -299,10 +332,20 @@ function runTests() {
             var log = getLogText()
             assertContains(log, 'Credit: $')
         })
+
+        it('Should request OneHour candles', () => {
+            var candleReqs = capturedRequests.filter(function (r) {
+                return r.url.includes('history/candles')
+            })
+            assert(candleReqs.length > 0, 'Should have candle requests')
+            assertContains(candleReqs[0].url, 'OneHour')
+        })
     })
 
     describe('main — handles API errors gracefully', () => {
         resetMocks()
+        // Mock market as open so pipeline runs
+        global.Utilities.formatDate = () => 'Mon,10,00'
         // Make all API calls fail
         registerMockResponse('market-data/search', 500, 'Server error')
 

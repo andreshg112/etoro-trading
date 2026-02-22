@@ -23,6 +23,7 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
 
 1. **Triggering (Apps Script):**
     - Time-driven trigger (cron job) configured in Apps Script UI to run the `main()` function every $N$ hours/minutes.
+    - `main()` first calls `isMarketOpen()` — if US markets are closed (weekends or outside 09:30–16:00 ET), execution is skipped gracefully.
 
 2. **Data Fetching (eToro Public API):**
     - **Base URL:** `https://public-api.etoro.com`
@@ -44,10 +45,12 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
     | Close demo position | `POST` | `/api/v1/trading/execution/demo/market-close-orders/positions/{positionId}` |
 
 3. **Analysis (Gemini API):**
-    - Collects market rates, 20-day historical candles, and full portfolio state from eToro.
-    - Constructs a structured prompt and sends it to `generativelanguage.googleapis.com` (Google AI Studio, Gemini 2.0 Flash).
+    - Collects market rates, 20 hourly historical candles, and full portfolio state from eToro.
+    - Constructs a structured prompt and sends it to `generativelanguage.googleapis.com` (Google AI Studio, Gemini 2.5 Flash).
     - Uses `responseMimeType: 'application/json'` to enforce strict JSON output.
-    - Asks Gemini to evaluate day-trading conditions and return a JSON response with autonomous decisions: `{"analysis": "...", "actions": [{"type": "BUY", "symbol": "AAPL", "instrumentId": 123, "amount": 50, "reason": "..."}]}`.
+    - Asks Gemini to evaluate day-trading conditions and return a JSON response with autonomous decisions: `{"analysis": "...", "actions": [{"type": "BUY", "symbol": "AAPL", "instrumentId": 123, "amount": 50, "stopLossRate": 115, "takeProfitRate": 135, "reason": "..."}]}`.
+    - **Capital Rule:** Gemini is instructed to never invest more than 10% of available cash in a single BUY trade.
+    - **Risk Management:** Every BUY action must include `stopLossRate` and `takeProfitRate` for automated risk management.
 
 4. **Execution / Logging:**
     - Parses Gemini's JSON response and executes each action via eToro's demo trading endpoints.
@@ -80,7 +83,7 @@ if (!eToroApiKey || !eToroUserKey || !geminiApiKey) {
 
 | File           | Responsibility                                                                                                                                                    |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Config.js`    | Constants (`ETORO_BASE_URL`, `GEMINI_BASE_URL`, `WATCHLIST`), `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`                                                |
+| `Config.js`    | Constants (`ETORO_BASE_URL`, `GEMINI_BASE_URL`, `WATCHLIST`), `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`, `isMarketOpen`                                |
 | `EtoroApi.js`  | eToro API functions: `searchInstrument`, `getInstrumentId`, `getMarketRates`, `getHistoricalCandles`, `getDemoPortfolio`, `openDemoPosition`, `closeDemoPosition` |
 | `GeminiApi.js` | Gemini AI functions: `askGemini`, `buildGeminiPrompt`                                                                                                             |
 | `Code.js`      | Main entry point: `main()`, `executeDecision()`, and `test*()` functions                                                                                          |
@@ -89,13 +92,14 @@ All files share a single global scope in Google Apps Script — no imports neede
 
 ## Key Functions Reference
 
-| Function                 | Description                                                                     |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| `main()`                 | Main entry point — full pipeline: fetch data → Gemini analysis → execute trades |
-| `executeDecision()`      | Parses Gemini's JSON response and executes BUY/SELL_CLOSE actions               |
-| `testEtoroConnection()`  | Quick connectivity test against eToro search API                                |
-| `testGetPortfolio()`     | Quick test of the demo portfolio/P&L endpoint                                   |
-| `testGeminiConnection()` | Quick test of Gemini API connectivity                                           |
+| Function                 | Description                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------- |
+| `main()`                 | Main entry point — checks market hours, then: fetch data → Gemini analysis → execute trades |
+| `executeDecision()`      | Parses Gemini's JSON response and executes BUY (with SL/TP) / SELL_CLOSE actions            |
+| `isMarketOpen()`         | Returns `true` if US markets are open (Mon–Fri 09:30–16:00 ET)                              |
+| `testEtoroConnection()`  | Quick connectivity test against eToro search API                                            |
+| `testGetPortfolio()`     | Quick test of the demo portfolio/P&L endpoint                                               |
+| `testGeminiConnection()` | Quick test of Gemini API connectivity                                                       |
 
 ## Testing
 
@@ -109,11 +113,11 @@ npm test
 
 **Test files:**
 
-| File                      | Covers                                                                     |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `tests/Config.test.js`    | Constants, `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`            |
-| `tests/EtoroApi.test.js`  | All eToro API functions, endpoint URLs, payloads, demo-safety              |
-| `tests/GeminiApi.test.js` | `askGemini`, `buildGeminiPrompt` structure, rate/position/candle mapping   |
-| `tests/Code.test.js`      | `executeDecision` (all action types, error handling), `main()` integration |
+| File                      | Covers                                                                                                                        |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `tests/Config.test.js`    | Constants, `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`, `isMarketOpen`                                               |
+| `tests/EtoroApi.test.js`  | All eToro API functions, endpoint URLs, payloads (incl. SL/TP), demo-safety                                                   |
+| `tests/GeminiApi.test.js` | `askGemini`, `buildGeminiPrompt` structure (10% rule, SL/TP format, hourly candles), rate/position/candle mapping             |
+| `tests/Code.test.js`      | `executeDecision` (all action types, SL/TP passthrough, error handling), `main()` integration (market hours, OneHour candles) |
 
 Tests mock Google Apps Script globals (`UrlFetchApp`, `PropertiesService`, `Utilities`, `Logger`) and load source files via `eval()` into the global scope to match Apps Script's runtime behavior.

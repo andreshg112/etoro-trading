@@ -75,15 +75,28 @@ function getDemoPortfolio() {
  * @param {number} amount - USD amount to invest
  * @param {boolean} [isBuy=true]
  * @param {number} [leverage=1]
+ * @param {number} [stopLossRate] - Stop-loss price (omit or 0 to skip)
+ * @param {number} [takeProfitRate] - Take-profit price (omit or 0 to skip)
  * @returns {EtoroOrderResult}
  */
-function openDemoPosition(instrumentId, amount, isBuy, leverage) {
-    return etoroFetch('/api/v1/trading/execution/demo/market-open-orders/by-amount', 'post', {
+function openDemoPosition(instrumentId, amount, isBuy, leverage, stopLossRate, takeProfitRate) {
+    var payload = {
         InstrumentId: instrumentId,
         Amount: amount,
         IsBuy: isBuy !== false,
         Leverage: leverage || 1,
-    })
+    }
+    if (stopLossRate) {
+        payload.StopLossRate = stopLossRate
+    }
+    if (takeProfitRate) {
+        payload.TakeProfitRate = takeProfitRate
+    }
+    return etoroFetch(
+        '/api/v1/trading/execution/demo/market-open-orders/by-amount',
+        'post',
+        payload,
+    )
 }
 
 /**

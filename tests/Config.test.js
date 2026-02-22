@@ -172,6 +172,70 @@ function runTests() {
         })
     })
 
+    describe('isMarketOpen — weekday during market hours', () => {
+        it('Should return true on Monday at 10:00 ET', () => {
+            global.Utilities.formatDate = () => 'Mon,10,00'
+            assertEqual(isMarketOpen(), true)
+        })
+
+        it('Should return true on Wednesday at 09:30 ET (market open)', () => {
+            global.Utilities.formatDate = () => 'Wed,09,30'
+            assertEqual(isMarketOpen(), true)
+        })
+
+        it('Should return true on Friday at 15:59 ET (1 min before close)', () => {
+            global.Utilities.formatDate = () => 'Fri,15,59'
+            assertEqual(isMarketOpen(), true)
+        })
+    })
+
+    describe('isMarketOpen — weekday outside market hours', () => {
+        it('Should return false on Monday at 09:29 ET (1 min before open)', () => {
+            global.Utilities.formatDate = () => 'Mon,09,29'
+            assertEqual(isMarketOpen(), false)
+        })
+
+        it('Should return false on Tuesday at 16:00 ET (market close)', () => {
+            global.Utilities.formatDate = () => 'Tue,16,00'
+            assertEqual(isMarketOpen(), false)
+        })
+
+        it('Should return false on Thursday at 20:00 ET (evening)', () => {
+            global.Utilities.formatDate = () => 'Thu,20,00'
+            assertEqual(isMarketOpen(), false)
+        })
+
+        it('Should return false on Friday at 04:00 ET (pre-market)', () => {
+            global.Utilities.formatDate = () => 'Fri,04,00'
+            assertEqual(isMarketOpen(), false)
+        })
+    })
+
+    describe('isMarketOpen — weekends', () => {
+        it('Should return false on Saturday at 12:00 ET', () => {
+            global.Utilities.formatDate = () => 'Sat,12,00'
+            assertEqual(isMarketOpen(), false)
+        })
+
+        it('Should return false on Sunday at 10:00 ET', () => {
+            global.Utilities.formatDate = () => 'Sun,10,00'
+            assertEqual(isMarketOpen(), false)
+        })
+    })
+
+    describe('isMarketOpen — uses America/New_York timezone', () => {
+        it('Should pass America/New_York as timezone arg', () => {
+            var capturedTz = null
+            // eslint-disable-next-line no-unused-vars
+            global.Utilities.formatDate = (_date, tz, _fmt) => {
+                capturedTz = tz
+                return 'Mon,10,00'
+            }
+            isMarketOpen()
+            assertEqual(capturedTz, 'America/New_York')
+        })
+    })
+
     return printSummary()
 }
 

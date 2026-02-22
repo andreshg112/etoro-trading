@@ -109,6 +109,8 @@ interface GeminiAction {
     instrumentId?: number
     amount?: number
     positionId?: number
+    stopLossRate?: number
+    takeProfitRate?: number
     reason: string
 }
 

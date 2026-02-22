@@ -122,7 +122,7 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
         '## CURRENT MARKET RATES (real-time)\n' +
         JSON.stringify(ratesSummary, null, 2) +
         '\n\n' +
-        '## HISTORICAL PRICE DATA (Last 20 Daily Candles, newest first)\n' +
+        '## HISTORICAL PRICE DATA (Last 20 Hourly Candles, newest first)\n' +
         JSON.stringify(candlesSummary, null, 2) +
         '\n\n' +
         '## INSTRUMENT ID MAP\n' +
@@ -133,7 +133,9 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
         '2. Review open positions — decide if any should be closed (take profit or cut losses).\n' +
         '3. Identify new entry opportunities based on short-term signals.\n' +
         '4. Consider available cash when sizing new positions.\n' +
-        '5. Be aggressive but calculated — this is a demo account for testing strategies.\n\n' +
+        '5. NEVER invest more than 10% of available cash in a single BUY trade.\n' +
+        '6. Always set a stopLossRate and takeProfitRate on every BUY order for risk management.\n' +
+        '7. Be aggressive but calculated — this is a demo account for testing strategies.\n\n' +
         '## RESPONSE FORMAT\n' +
         'Respond with ONLY a JSON object:\n' +
         '{\n' +
@@ -144,6 +146,8 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
         '      "symbol": "TICKER",\n' +
         '      "instrumentId": <number>,\n' +
         '      "amount": <number for BUY in USD>,\n' +
+        '      "stopLossRate": <number, required for BUY — price to cut loss>,\n' +
+        '      "takeProfitRate": <number, required for BUY — price to take profit>,\n' +
         '      "positionId": <number for SELL_CLOSE>,\n' +
         '      "reason": "Brief reason"\n' +
         '    }\n' +

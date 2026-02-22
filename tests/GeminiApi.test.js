@@ -218,6 +218,27 @@ function runTests() {
             assertContains(prompt, 'BUY')
             assertContains(prompt, 'SELL_CLOSE')
         })
+
+        it('Should include 10% capital limit rule', () => {
+            assertContains(prompt, '10%')
+            assertContains(prompt, 'NEVER invest more than 10%')
+        })
+
+        it('Should include stopLossRate in response format', () => {
+            assertContains(prompt, 'stopLossRate')
+        })
+
+        it('Should include takeProfitRate in response format', () => {
+            assertContains(prompt, 'takeProfitRate')
+        })
+
+        it('Should reference Hourly candles in header', () => {
+            assertContains(prompt, 'Hourly Candles')
+        })
+
+        it('Should instruct to always set SL/TP on BUY orders', () => {
+            assertContains(prompt, 'stopLossRate and takeProfitRate')
+        })
     })
 
     describe('buildGeminiPrompt — rate mapping', () => {
@@ -267,7 +288,13 @@ function runTests() {
         var instrumentMap = {} // Empty map: position IDs won't match
         /** @type {CandlesMap} */
         var emptyCandlesMap = {}
-        var prompt = buildGeminiPrompt(instrumentMap, { rates: [] }, emptyCandlesMap, samplePortfolio(), 9500)
+        var prompt = buildGeminiPrompt(
+            instrumentMap,
+            { rates: [] },
+            emptyCandlesMap,
+            samplePortfolio(),
+            9500,
+        )
 
         it('Should label unknown instruments with ID', () => {
             assertContains(prompt, 'Unknown(ID:1234)')
