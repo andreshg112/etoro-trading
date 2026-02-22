@@ -18,62 +18,90 @@ export default [
                 Session: 'readonly',
                 UrlFetchApp: 'readonly',
                 PropertiesService: 'readonly',
+                Utilities: 'readonly',
             },
         },
         rules: {
             'no-unused-vars': [
                 'warn',
                 {
-                    varsIgnorePattern: '^(consultarPrecioVOO)$',
+                    varsIgnorePattern:
+                        '^(main|testEtoroConnection|testGetPortfolio|testGeminiConnection)$',
                 },
             ],
             'no-undef': [
                 'error',
                 {
-                    // Allow Utils.js functions to be used globally (Apps Script behavior)
                     typeof: true,
                 },
             ],
         },
     },
     {
-        // Utils.js exports functions used by other files
-        files: ['Utils.js'],
+        // Config.js exports shared constants and functions used by all other files
+        files: ['Config.js'],
         rules: {
             'no-unused-vars': [
                 'warn',
                 {
-                    // varsIgnorePattern:
-                    //     '^(createBirthdayEvent|toTitleCase|parseBirthdayDate|generateEventDescription|generateBirthdayEventTitle|isValidPhoneNumber|sendSMS|getCalendarId|updateCalendarEvent|updateOrCreateBackupSheet)$',
+                    varsIgnorePattern:
+                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|getScriptProperty|getEtoroHeaders|etoroFetch)$',
                 },
             ],
         },
     },
     {
-        // Allow Utils.js functions as globals in files that use them
-        files: ['Code.js'],
+        // EtoroApi.js exports eToro API functions used by Code.js
+        files: ['EtoroApi.js'],
         languageOptions: {
             globals: {
-                // createBirthdayEvent: 'readonly',
-                // toTitleCase: 'readonly',
-                // generateEventDescription: 'readonly',
-                // generateBirthdayEventTitle: 'readonly',
-                // parseBirthdayDate: 'readonly',
-                // isValidPhoneNumber: 'readonly',
-                // sendSMS: 'readonly',
-                // getCalendarId: 'readonly',
-                // updateCalendarEvent: 'readonly',
-                // updateOrCreateBackupSheet: 'readonly',
+                etoroFetch: 'readonly',
             },
+        },
+        rules: {
+            'no-unused-vars': [
+                'warn',
+                {
+                    varsIgnorePattern:
+                        '^(searchInstrument|getInstrumentId|getMarketRates|getHistoricalCandles|getDemoPortfolio|openDemoPosition|closeDemoPosition)$',
+                },
+            ],
         },
     },
     {
-        // Allow Code.js functions as globals in files that use them
-        // files: ['RecrearEventosCumple.js'],
-        // languageOptions: {
-        //     globals: {
-        //         updateOrCreateBackupSheet: 'readonly',
-        //     },
-        // },
+        // GeminiApi.js exports Gemini functions used by Code.js
+        files: ['GeminiApi.js'],
+        languageOptions: {
+            globals: {
+                getScriptProperty: 'readonly',
+                GEMINI_BASE_URL: 'readonly',
+            },
+        },
+        rules: {
+            'no-unused-vars': [
+                'warn',
+                {
+                    varsIgnorePattern: '^(askGemini|buildGeminiPrompt)$',
+                },
+            ],
+        },
+    },
+    {
+        // Code.js uses functions from all other files
+        files: ['Code.js'],
+        languageOptions: {
+            globals: {
+                WATCHLIST: 'readonly',
+                getInstrumentId: 'readonly',
+                getMarketRates: 'readonly',
+                getHistoricalCandles: 'readonly',
+                getDemoPortfolio: 'readonly',
+                openDemoPosition: 'readonly',
+                closeDemoPosition: 'readonly',
+                searchInstrument: 'readonly',
+                askGemini: 'readonly',
+                buildGeminiPrompt: 'readonly',
+            },
+        },
     },
 ]
