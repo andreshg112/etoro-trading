@@ -4,107 +4,20 @@
  * To run this file alone: node tests/Code.test.js
  */
 
-import { describe, it, assert, assertContains, printSummary } from './testUtils.js'
-import { readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
+import {
+    describe,
+    it,
+    assert,
+    assertContains,
+    printSummary,
+    loadSourceFiles,
+    installGasMocks,
+} from './testUtils.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const { capturedRequests, logOutput, getLogText, resetMocks, registerMockResponse } =
+    installGasMocks({ captureLog: true })
 
-// ── Mock Google Apps Script globals ────────────────────────────────────────
-
-let logOutput = []
-
-global.Logger = {
-    log: function (msg) {
-        logOutput.push(msg)
-    },
-}
-
-global.PropertiesService = {
-    getScriptProperties: function () {
-        return {
-            getProperty: function (key) {
-                const props = {
-                    ETORO_API_KEY: 'test-api-key',
-                    ETORO_USER_KEY: 'test-user-key',
-                    GEMINI_API_KEY: 'test-gemini-key',
-                }
-                return props[key] || null
-            },
-        }
-    },
-}
-
-global.Utilities = {
-    getUuid: function () {
-        return 'mock-uuid'
-    },
-}
-
-// ── Request tracking for mock UrlFetchApp ──────────────────────────────────
-
-let capturedRequests = []
-let mockResponses = {}
-
-/**
- * Register a mock response for a URL pattern.
- * @param {string} urlPattern - Substring to match in the URL
- * @param {number} code - HTTP status code
- * @param {Object|string} body - Response body
- */
-function registerMockResponse(urlPattern, code, body) {
-    mockResponses[urlPattern] = {
-        getResponseCode: function () {
-            return code
-        },
-        getContentText: function () {
-            return typeof body === 'string' ? body : JSON.stringify(body)
-        },
-    }
-}
-
-global.UrlFetchApp = {
-    fetch: function (url, options) {
-        capturedRequests.push({ url, options })
-        // Find matching mock response
-        for (var pattern in mockResponses) {
-            if (url.includes(pattern)) {
-                return mockResponses[pattern]
-            }
-        }
-        // Default: 200 with empty JSON
-        return {
-            getResponseCode: function () {
-                return 200
-            },
-            getContentText: function () {
-                return '{}'
-            },
-        }
-    },
-}
-
-// ── Load source files in dependency order ──────────────────────────────────
-
-const globalEval = eval
-globalEval(readFileSync(join(__dirname, '../Config.js'), 'utf8'))
-globalEval(readFileSync(join(__dirname, '../EtoroApi.js'), 'utf8'))
-globalEval(readFileSync(join(__dirname, '../GeminiApi.js'), 'utf8'))
-globalEval(readFileSync(join(__dirname, '../Code.js'), 'utf8'))
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function resetMocks() {
-    capturedRequests = []
-    logOutput = []
-    mockResponses = {}
-}
-
-function getLogText() {
-    return logOutput.join('\n')
-}
+loadSourceFiles('Config.js', 'EtoroApi.js', 'GeminiApi.js', 'Code.js')
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
@@ -119,28 +32,28 @@ function runTests() {
         })
 
         it('Should log analysis when provided', () => {
-            logOutput = []
+            logOutput.length = 0
             executeDecision({ analysis: 'Sideways market', actions: [] })
             var log = getLogText()
             assertContains(log, 'Sideways market')
         })
 
         it('Should handle null decision gracefully', () => {
-            logOutput = []
+            logOutput.length = 0
             executeDecision(null)
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
 
         it('Should handle undefined decision gracefully', () => {
-            logOutput = []
+            logOutput.length = 0
             executeDecision(undefined)
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
 
         it('Should handle decision with missing actions', () => {
-            logOutput = []
+            logOutput.length = 0
             executeDecision({ analysis: 'Test' })
             var log = getLogText()
             assertContains(log, 'No actions recommended')

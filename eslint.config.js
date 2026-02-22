@@ -1,8 +1,9 @@
 import js from '@eslint/js'
+import globals from 'globals'
 
 export default [
     {
-        ignores: ['node_modules/**', 'tests/**', 'eslint.config.js'],
+        ignores: ['node_modules/**', 'eslint.config.js'],
     },
     js.configs.recommended,
     {
@@ -102,6 +103,21 @@ export default [
                 askGemini: 'readonly',
                 buildGeminiPrompt: 'readonly',
             },
+        },
+    },
+    {
+        // Test files use ESM and Node.js APIs; source globals are loaded via eval
+        files: ['tests/**/*.js'],
+        languageOptions: {
+            ecmaVersion: 2020,
+            sourceType: 'module',
+            globals: {
+                ...globals.node,
+            },
+        },
+        rules: {
+            'no-undef': 'off',
+            'no-unused-vars': ['warn', { varsIgnorePattern: '^(runTests)$' }],
         },
     },
 ]

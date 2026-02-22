@@ -11,80 +11,26 @@ import {
     assertContains,
     assertThrows,
     printSummary,
-    assert,
+    loadSourceFiles,
+    installGasMocks,
 } from './testUtils.js'
-import { readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const { capturedRequests, resetMocks, setMockResponse } = installGasMocks()
 
-// ── Mock Google Apps Script globals ────────────────────────────────────────
-
-global.Logger = { log: function () {} }
-
-global.PropertiesService = {
-    getScriptProperties: function () {
-        return {
-            getProperty: function (key) {
-                const props = {
-                    ETORO_API_KEY: 'test-api-key',
-                    ETORO_USER_KEY: 'test-user-key',
-                    GEMINI_API_KEY: 'test-gemini-key',
-                }
-                return props[key] || null
-            },
-        }
-    },
-}
-
-global.Utilities = {
-    getUuid: function () {
-        return 'mock-uuid'
-    },
-}
-
-let capturedRequests = []
-let mockHttpResponse = null
-
-global.UrlFetchApp = {
-    fetch: function (url, options) {
-        capturedRequests.push({ url, options })
-        return mockHttpResponse
-    },
-}
-
-// ── Load source files in dependency order ──────────────────────────────────
-
-const globalEval = eval
-globalEval(readFileSync(join(__dirname, '../Config.js'), 'utf8'))
-globalEval(readFileSync(join(__dirname, '../GeminiApi.js'), 'utf8'))
+loadSourceFiles('Config.js', 'GeminiApi.js')
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function resetMocks() {
-    capturedRequests = []
-    mockHttpResponse = null
-}
-
 function mockGeminiResponse(jsonObj) {
-    mockHttpResponse = {
-        getResponseCode: function () {
-            return 200
-        },
-        getContentText: function () {
-            return JSON.stringify({
-                candidates: [
-                    {
-                        content: {
-                            parts: [{ text: JSON.stringify(jsonObj) }],
-                        },
-                    },
-                ],
-            })
-        },
-    }
+    setMockResponse(200, {
+        candidates: [
+            {
+                content: {
+                    parts: [{ text: JSON.stringify(jsonObj) }],
+                },
+            },
+        ],
+    })
 }
 
 // ── Sample test data ───────────────────────────────────────────────────────
@@ -210,14 +156,7 @@ function runTests() {
 
         it('Should throw on non-200 response', () => {
             resetMocks()
-            mockHttpResponse = {
-                getResponseCode: function () {
-                    return 429
-                },
-                getContentText: function () {
-                    return 'Rate limited'
-                },
-            }
+            setMockResponse(429, 'Rate limited')
             assertThrows(() => askGemini('Test'), 'Gemini API error (HTTP 429)')
         })
 
@@ -324,8 +263,11 @@ function runTests() {
     })
 
     describe('buildGeminiPrompt — unknown positions', () => {
+        /** @type {InstrumentMap} */
         var instrumentMap = {} // Empty map: position IDs won't match
-        var prompt = buildGeminiPrompt(instrumentMap, { rates: [] }, {}, samplePortfolio(), 9500)
+        /** @type {CandlesMap} */
+        var emptyCandlesMap = {}
+        var prompt = buildGeminiPrompt(instrumentMap, { rates: [] }, emptyCandlesMap, samplePortfolio(), 9500)
 
         it('Should label unknown instruments with ID', () => {
             assertContains(prompt, 'Unknown(ID:1234)')

@@ -8,76 +8,23 @@
 import {
     describe,
     it,
-    assert,
     assertEqual,
     assertThrows,
     assertContains,
     printSummary,
+    loadSourceFiles,
+    installGasMocks,
 } from './testUtils.js'
-import { readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const {
+    capturedRequests,
+    resetMocks,
+    setMockResponse: mockResponse,
+} = installGasMocks({
+    properties: { ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' },
+})
 
-// ── Mock Google Apps Script globals ────────────────────────────────────────
-
-global.Logger = { log: function () {} }
-
-global.PropertiesService = {
-    getScriptProperties: function () {
-        return {
-            getProperty: function (key) {
-                const props = {
-                    ETORO_API_KEY: 'test-api-key',
-                    ETORO_USER_KEY: 'test-user-key',
-                }
-                return props[key] || null
-            },
-        }
-    },
-}
-
-global.Utilities = {
-    getUuid: function () {
-        return 'mock-uuid'
-    },
-}
-
-let capturedRequests = []
-let mockHttpResponse = null
-
-global.UrlFetchApp = {
-    fetch: function (url, options) {
-        capturedRequests.push({ url, options })
-        return mockHttpResponse
-    },
-}
-
-// ── Load source files in dependency order ──────────────────────────────────
-
-const globalEval = eval
-globalEval(readFileSync(join(__dirname, '../Config.js'), 'utf8'))
-globalEval(readFileSync(join(__dirname, '../EtoroApi.js'), 'utf8'))
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function resetMocks() {
-    capturedRequests = []
-    mockHttpResponse = null
-}
-
-function mockResponse(code, body) {
-    mockHttpResponse = {
-        getResponseCode: function () {
-            return code
-        },
-        getContentText: function () {
-            return typeof body === 'string' ? body : JSON.stringify(body)
-        },
-    }
-}
+loadSourceFiles('Config.js', 'EtoroApi.js')
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 

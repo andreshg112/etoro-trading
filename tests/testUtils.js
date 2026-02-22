@@ -1,7 +1,11 @@
 /**
  * Shared test utilities for all test files
- * Provides a vitest-like API with describe() and it()
+ * Provides a vitest-like API with describe() and it(), plus mock setup helpers.
  */
+
+import { readFileSync } from 'fs'
+import { dirname, join } from 'path'
+import { fileURLToPath } from 'url'
 
 let currentSuite = null
 let suiteResults = []
@@ -144,4 +148,123 @@ export function printSummary() {
 export function resetTestState() {
     currentSuite = null
     suiteResults = []
+}
+
+// ── Mock & Setup Helpers ───────────────────────────────────────────────────
+
+const __testDir = dirname(fileURLToPath(import.meta.url))
+const __projectDir = join(__testDir, '..')
+
+/**
+ * Loads source files into the global scope via eval, simulating
+ * Google Apps Script's shared global namespace.
+ * @param {...string} fileNames - Source file names relative to project root
+ */
+export function loadSourceFiles(...fileNames) {
+    const globalEval = eval
+    for (const name of fileNames) {
+        globalEval(readFileSync(join(__projectDir, name), 'utf8'))
+    }
+}
+
+/**
+ * Creates a mock HTTP response object matching UrlFetchApp.HTTPResponse.
+ * @param {number} code - HTTP status code
+ * @param {string | Record<string, unknown>} body - Response body (objects are JSON-stringified)
+ * @returns {{ getResponseCode: () => number, getContentText: () => string }}
+ */
+export function createMockResponse(code, body) {
+    return {
+        getResponseCode: () => code,
+        getContentText: () => (typeof body === 'string' ? body : JSON.stringify(body)),
+    }
+}
+
+/**
+ * @typedef {object} MockEnvironment
+ * @property {Array<{url: string, options: any}>} capturedRequests - All captured UrlFetchApp.fetch calls
+ * @property {string[]} logOutput - All captured Logger.log messages (only when captureLog is true)
+ * @property {() => string} getLogText - Returns all log messages joined by newline
+ * @property {(code: number, body: string | Record<string, unknown>) => void} setMockResponse - Sets the default mock HTTP response
+ * @property {(urlPattern: string, code: number, body: string | Record<string, unknown>) => void} registerMockResponse - Registers a URL-pattern-matched mock response
+ * @property {(newProps: Record<string, string>) => void} setProperties - Replaces all script properties
+ * @property {() => void} resetMocks - Clears all mock state (requests, logs, responses — not properties)
+ */
+
+/**
+ * Installs mock Google Apps Script globals (Logger, PropertiesService, Utilities,
+ * UrlFetchApp) and returns a control object for managing mock state in tests.
+ *
+ * @param {object} [options]
+ * @param {Record<string, string>} [options.properties] - Initial script properties
+ * @param {boolean} [options.captureLog] - If true, Logger.log records to logOutput
+ * @param {string} [options.uuid] - Mock UUID value (default: 'mock-uuid')
+ * @returns {MockEnvironment}
+ */
+export function installGasMocks(options = {}) {
+    const defaultProps = {
+        ETORO_API_KEY: 'test-api-key',
+        ETORO_USER_KEY: 'test-user-key',
+        GEMINI_API_KEY: 'test-gemini-key',
+    }
+    let properties = { ...(options.properties || defaultProps) }
+    const uuid = options.uuid || 'mock-uuid'
+
+    /** @type {Array<{url: string, options: any}>} */
+    const capturedRequests = []
+    /** @type {string[]} */
+    const logOutput = []
+    /** @type {Record<string, ReturnType<typeof createMockResponse>>} */
+    const mockResponses = {}
+    /** @type {{ response: ReturnType<typeof createMockResponse> | null }} */
+    const state = { response: null }
+
+    // Install globals
+    global.Logger = options.captureLog
+        ? { log: (/** @type {string} */ msg) => logOutput.push(msg) }
+        : { log: () => {} }
+
+    global.PropertiesService = {
+        getScriptProperties: () => ({
+            getProperty: (/** @type {string} */ key) => properties[key] || null,
+        }),
+    }
+
+    global.Utilities = { getUuid: () => uuid }
+
+    global.UrlFetchApp = {
+        fetch: (/** @type {string} */ url, /** @type {any} */ opts) => {
+            capturedRequests.push({ url, options: opts })
+            for (const pattern in mockResponses) {
+                if (url.includes(pattern)) return mockResponses[pattern]
+            }
+            if (state.response) return state.response
+            return createMockResponse(200, '{}')
+        },
+    }
+
+    return {
+        capturedRequests,
+        logOutput,
+        getLogText: () => logOutput.join('\n'),
+
+        setMockResponse(code, body) {
+            state.response = createMockResponse(code, body)
+        },
+
+        registerMockResponse(urlPattern, code, body) {
+            mockResponses[urlPattern] = createMockResponse(code, body)
+        },
+
+        setProperties(newProps) {
+            properties = { ...newProps }
+        },
+
+        resetMocks() {
+            capturedRequests.length = 0
+            logOutput.length = 0
+            state.response = null
+            for (const key in mockResponses) delete mockResponses[key]
+        },
+    }
 }

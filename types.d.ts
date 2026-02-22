@@ -104,9 +104,9 @@ interface EtoroCloseResult {
 // ── Gemini AI ──────────────────────────────────────────────────────────────
 
 interface GeminiAction {
-    type: 'BUY' | 'SELL_CLOSE'
+    type: string
     symbol: string
-    instrumentId: number
+    instrumentId?: number
     amount?: number
     positionId?: number
     reason: string
@@ -114,7 +114,7 @@ interface GeminiAction {
 
 interface GeminiDecision {
     analysis: string
-    actions: GeminiAction[]
+    actions?: GeminiAction[]
 }
 
 // ── Shared Maps & Summaries ────────────────────────────────────────────────
@@ -126,7 +126,7 @@ interface InstrumentMap {
 
 /** Maps ticker symbols to candle response data */
 interface CandlesMap {
-    [symbol: string]: EtoroCandleResponse
+    [symbol: string]: EtoroCandleResponse | undefined
 }
 
 /** Summarized rate info keyed by symbol, used in prompt construction */

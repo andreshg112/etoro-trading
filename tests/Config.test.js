@@ -4,69 +4,36 @@
  * To run this file alone: node tests/Config.test.js
  */
 
-import { describe, it, assert, assertEqual, assertThrows, printSummary } from './testUtils.js'
-import { readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
+import {
+    describe,
+    it,
+    assert,
+    assertEqual,
+    assertThrows,
+    printSummary,
+    loadSourceFiles,
+    installGasMocks,
+} from './testUtils.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const {
+    capturedRequests,
+    resetMocks: resetEnv,
+    setMockResponse,
+    setProperties,
+} = installGasMocks({ uuid: 'mock-uuid-1234-5678' })
 
-// ── Mock Google Apps Script globals ────────────────────────────────────────
-
-let mockProperties = {}
-
-global.Logger = { log: function () {} }
-
-global.PropertiesService = {
-    getScriptProperties: function () {
-        return {
-            getProperty: function (key) {
-                return mockProperties[key] || null
-            },
-        }
-    },
-}
-
-global.Utilities = {
-    getUuid: function () {
-        return 'mock-uuid-1234-5678'
-    },
-}
-
-let capturedRequests = []
-let mockHttpResponse = null
-
-global.UrlFetchApp = {
-    fetch: function (url, options) {
-        capturedRequests.push({ url, options })
-        return mockHttpResponse
-    },
-}
-
-// ── Load Config.js into global scope ───────────────────────────────────────
-
-const configCode = readFileSync(join(__dirname, '../Config.js'), 'utf8')
-const globalEval = eval
-globalEval(configCode)
+loadSourceFiles('Config.js')
 
 // ── Helper ─────────────────────────────────────────────────────────────────
 
 function resetMocks() {
-    mockProperties = {
+    resetEnv()
+    setProperties({
         ETORO_API_KEY: 'test-api-key',
         ETORO_USER_KEY: 'test-user-key',
         GEMINI_API_KEY: 'test-gemini-key',
-    }
-    capturedRequests = []
-    mockHttpResponse = {
-        getResponseCode: function () {
-            return 200
-        },
-        getContentText: function () {
-            return '{"ok": true}'
-        },
-    }
+    })
+    setMockResponse(200, { ok: true })
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -102,7 +69,10 @@ function runTests() {
         })
 
         it('Should throw when property is missing', () => {
-            assertThrows(() => getScriptProperty('NON_EXISTENT_KEY'), 'Missing script property: NON_EXISTENT_KEY')
+            assertThrows(
+                () => getScriptProperty('NON_EXISTENT_KEY'),
+                'Missing script property: NON_EXISTENT_KEY',
+            )
         })
     })
 
@@ -131,13 +101,13 @@ function runTests() {
         })
 
         it('Should default to GET method', () => {
-            capturedRequests = []
+            capturedRequests.length = 0
             etoroFetch('/api/v1/test')
             assertEqual(capturedRequests[0].options.method, 'get')
         })
 
         it('Should include auth headers', () => {
-            capturedRequests = []
+            capturedRequests.length = 0
             etoroFetch('/api/v1/test')
             var headers = capturedRequests[0].options.headers
             assert(headers['x-api-key'] === 'test-api-key', 'Should have x-api-key')
@@ -145,7 +115,7 @@ function runTests() {
         })
 
         it('Should set muteHttpExceptions to true', () => {
-            capturedRequests = []
+            capturedRequests.length = 0
             etoroFetch('/api/v1/test')
             assertEqual(capturedRequests[0].options.muteHttpExceptions, true)
         })
@@ -165,7 +135,7 @@ function runTests() {
         })
 
         it('Should stringify payload', () => {
-            capturedRequests = []
+            capturedRequests.length = 0
             etoroFetch('/api/v1/trade', 'post', { Amount: 100, IsBuy: true })
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.Amount, 100)
@@ -173,7 +143,7 @@ function runTests() {
         })
 
         it('Should not include payload for GET requests', () => {
-            capturedRequests = []
+            capturedRequests.length = 0
             etoroFetch('/api/v1/data')
             assertEqual(capturedRequests[0].options.payload, undefined)
         })
@@ -181,51 +151,23 @@ function runTests() {
 
     describe('etoroFetch — error handling', () => {
         it('Should throw on HTTP 404', () => {
-            mockHttpResponse = {
-                getResponseCode: function () {
-                    return 404
-                },
-                getContentText: function () {
-                    return '{"message": "Not found"}'
-                },
-            }
+            setMockResponse(404, '{"message": "Not found"}')
             assertThrows(() => etoroFetch('/api/v1/missing'), 'eToro API error (HTTP 404)')
         })
 
         it('Should throw on HTTP 401', () => {
-            mockHttpResponse = {
-                getResponseCode: function () {
-                    return 401
-                },
-                getContentText: function () {
-                    return '{"message": "Unauthorized"}'
-                },
-            }
+            setMockResponse(401, '{"message": "Unauthorized"}')
             assertThrows(() => etoroFetch('/api/v1/secret'), 'eToro API error (HTTP 401)')
         })
 
         it('Should accept HTTP 201 as success', () => {
-            mockHttpResponse = {
-                getResponseCode: function () {
-                    return 201
-                },
-                getContentText: function () {
-                    return '{"created": true}'
-                },
-            }
+            setMockResponse(201, { created: true })
             var result = etoroFetch('/api/v1/create', 'post', {})
             assertEqual(result.created, true)
         })
 
         it('Should include response body in error message', () => {
-            mockHttpResponse = {
-                getResponseCode: function () {
-                    return 500
-                },
-                getContentText: function () {
-                    return 'Server broke'
-                },
-            }
+            setMockResponse(500, 'Server broke')
             assertThrows(() => etoroFetch('/api/v1/broken'), 'Server broke')
         })
     })
