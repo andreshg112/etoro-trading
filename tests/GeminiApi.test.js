@@ -104,7 +104,7 @@ function runTests() {
             mockGeminiResponse({ status: 'ok' })
             askGemini('Test prompt')
             assertContains(capturedRequests[0].url, 'generativelanguage.googleapis.com')
-            assertContains(capturedRequests[0].url, 'gemini-2.0-flash')
+            assertContains(capturedRequests[0].url, 'gemini-2.5-flash')
             assertContains(capturedRequests[0].url, 'key=test-gemini-key')
         })
 
