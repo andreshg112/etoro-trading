@@ -142,22 +142,31 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
         '{\n' +
         '  "analysis": "Brief overall market analysis",\n' +
         '  "actions": [\n' +
+        '    // BUY example — uses instrumentId from INSTRUMENT ID MAP:\n' +
         '    {\n' +
-        '      "type": "BUY" | "SELL_CLOSE",\n' +
+        '      "type": "BUY",\n' +
         '      "symbol": "TICKER",\n' +
-        '      "instrumentId": <number>,\n' +
-        '      "amount": <number for BUY in USD>,\n' +
-        '      "stopLossRate": <number, required for BUY — price to cut loss>,\n' +
-        '      "takeProfitRate": <number, required for BUY — price to take profit>,\n' +
-        '      "positionId": <number for SELL_CLOSE>,\n' +
+        '      "instrumentId": <number from INSTRUMENT ID MAP>,\n' +
+        '      "amount": <USD amount>,\n' +
+        '      "stopLossRate": <price to cut loss>,\n' +
+        '      "takeProfitRate": <price to take profit>,\n' +
+        '      "reason": "Brief reason"\n' +
+        '    },\n' +
+        '    // SELL_CLOSE example — uses positionId from CURRENT OPEN POSITIONS:\n' +
+        '    {\n' +
+        '      "type": "SELL_CLOSE",\n' +
+        '      "symbol": "TICKER",\n' +
+        '      "positionId": <number from CURRENT OPEN POSITIONS>,\n' +
         '      "reason": "Brief reason"\n' +
         '    }\n' +
         '  ]\n' +
         '}\n\n' +
         'Rules:\n' +
-        '- Only use instrument IDs from the INSTRUMENT ID MAP above.\n' +
-        '- For SELL_CLOSE, use the positionId from CURRENT OPEN POSITIONS.\n' +
+        '- CRITICAL: For BUY actions, you MUST use the instrumentId from the INSTRUMENT ID MAP.\n' +
+        '- CRITICAL: For SELL_CLOSE actions, you MUST use the positionId from CURRENT OPEN POSITIONS. NEVER use the instrumentId for a SELL_CLOSE action.\n' +
         '- For BUY, specify USD amount (must not exceed available cash collectively).\n' +
+        '- For BUY, always include stopLossRate and takeProfitRate.\n' +
+        '- NEVER invest more than 10% of available cash in a single BUY trade.\n' +
         '- If no action is warranted, return an empty actions array with your analysis.'
     )
 }

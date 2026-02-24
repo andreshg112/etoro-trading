@@ -239,6 +239,20 @@ function runTests() {
         it('Should instruct to always set SL/TP on BUY orders', () => {
             assertContains(prompt, 'stopLossRate and takeProfitRate')
         })
+
+        it('Should enforce instrumentId for BUY actions', () => {
+            assertContains(prompt, 'CRITICAL: For BUY actions, you MUST use the instrumentId')
+        })
+
+        it('Should enforce positionId for SELL_CLOSE and forbid instrumentId', () => {
+            assertContains(prompt, 'CRITICAL: For SELL_CLOSE actions, you MUST use the positionId')
+            assertContains(prompt, 'NEVER use the instrumentId for a SELL_CLOSE')
+        })
+
+        it('Should show separate BUY and SELL_CLOSE examples in response format', () => {
+            assertContains(prompt, '"type": "BUY"')
+            assertContains(prompt, '"type": "SELL_CLOSE"')
+        })
     })
 
     describe('buildGeminiPrompt — rate mapping', () => {
