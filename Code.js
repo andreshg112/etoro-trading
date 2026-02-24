@@ -29,9 +29,14 @@ function executeDecision(decision) {
 
     decision.actions.forEach(function (action) {
         console.log('  -> ' + action.type + ' ' + action.symbol + ' | Reason: ' + action.reason)
+        console.log('     Action payload received: ' + JSON.stringify(action))
 
         try {
             if (action.type === 'BUY') {
+                if (!action.instrumentId) {
+                    throw new Error('Missing instrumentId for BUY action')
+                }
+
                 var buyResult = openDemoPosition(
                     /** @type {number} */ (action.instrumentId),
                     /** @type {number} */ (action.amount),
@@ -42,6 +47,10 @@ function executeDecision(decision) {
                 )
                 console.log('     BUY order placed: ' + JSON.stringify(buyResult))
             } else if (action.type === 'SELL_CLOSE') {
+                if (!action.positionId) {
+                    throw new Error('Missing positionId for SELL_CLOSE action')
+                }
+
                 var closeResult = closeDemoPosition(/** @type {number} */ (action.positionId))
                 console.log('     Position closed: ' + JSON.stringify(closeResult))
             } else {
