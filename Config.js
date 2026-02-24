@@ -75,9 +75,10 @@ function isMarketOpen() {
  * @returns {any} Parsed JSON response — callers provide specific return types
  */
 function etoroFetch(endpoint, method, payload) {
+    /** @type {GoogleAppsScript.URL_Fetch.URLFetchRequestOptions} */
     var options = {
-        method: method || 'get',
-        headers: getEtoroHeaders(),
+        method: /** @type {GoogleAppsScript.URL_Fetch.HttpMethod} */ (method || 'get'),
+        headers: /** @type {any} */ (getEtoroHeaders()),
         muteHttpExceptions: true,
     }
     if (payload) {

@@ -14,8 +14,9 @@ function askGemini(prompt) {
     var apiKey = getScriptProperty('GEMINI_API_KEY')
     var url = GEMINI_BASE_URL + '/models/gemini-2.5-flash:generateContent?key=' + apiKey
 
+    /** @type {GoogleAppsScript.URL_Fetch.URLFetchRequestOptions} */
     var options = {
-        method: 'post',
+        method: /** @type {GoogleAppsScript.URL_Fetch.HttpMethod} */ ('post'),
         contentType: 'application/json',
         payload: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],

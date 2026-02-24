@@ -54,7 +54,7 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
 
 4. **Execution / Logging:**
     - Parses Gemini's JSON response and executes each action via eToro's demo trading endpoints.
-    - All steps, decisions, and errors are logged via `Logger.log()` for review in the Apps Script Executions panel.
+    - All steps, decisions, and errors are logged via `console.log/warn/error()` for review in the Apps Script Executions panel.
 
 ## Security & Configuration Management
 

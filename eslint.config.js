@@ -20,6 +20,7 @@ export default [
                 UrlFetchApp: 'readonly',
                 PropertiesService: 'readonly',
                 Utilities: 'readonly',
+                console: 'readonly',
             },
         },
         rules: {

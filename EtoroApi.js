@@ -80,6 +80,7 @@ function getDemoPortfolio() {
  * @returns {EtoroOrderResult}
  */
 function openDemoPosition(instrumentId, amount, isBuy, leverage, stopLossRate, takeProfitRate) {
+    /** @type {Record<string, unknown>} */
     var payload = {
         InstrumentId: instrumentId,
         Amount: amount,

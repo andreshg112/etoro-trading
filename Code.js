@@ -18,37 +18,37 @@
  */
 function executeDecision(decision) {
     if (!decision || !decision.actions || decision.actions.length === 0) {
-        Logger.log('  No actions recommended. Holding current positions.')
+        console.log('  No actions recommended. Holding current positions.')
         if (decision && decision.analysis) {
-            Logger.log('  Analysis: ' + decision.analysis)
+            console.log('  Analysis: ' + decision.analysis)
         }
         return
     }
 
-    Logger.log('  Analysis: ' + decision.analysis)
+    console.log('  Analysis: ' + decision.analysis)
 
     decision.actions.forEach(function (action) {
-        Logger.log('  -> ' + action.type + ' ' + action.symbol + ' | Reason: ' + action.reason)
+        console.log('  -> ' + action.type + ' ' + action.symbol + ' | Reason: ' + action.reason)
 
         try {
             if (action.type === 'BUY') {
                 var buyResult = openDemoPosition(
-                    action.instrumentId,
-                    action.amount,
+                    /** @type {number} */ (action.instrumentId),
+                    /** @type {number} */ (action.amount),
                     true,
                     1,
                     action.stopLossRate,
                     action.takeProfitRate,
                 )
-                Logger.log('     BUY order placed: ' + JSON.stringify(buyResult))
+                console.log('     BUY order placed: ' + JSON.stringify(buyResult))
             } else if (action.type === 'SELL_CLOSE') {
-                var closeResult = closeDemoPosition(action.positionId)
-                Logger.log('     Position closed: ' + JSON.stringify(closeResult))
+                var closeResult = closeDemoPosition(/** @type {number} */ (action.positionId))
+                console.log('     Position closed: ' + JSON.stringify(closeResult))
             } else {
-                Logger.log('     Unknown action type: ' + action.type)
+                console.log('     Unknown action type: ' + action.type)
             }
         } catch (e) {
-            Logger.log('     EXECUTION ERROR: ' + e.message)
+            console.error('     EXECUTION ERROR: ' + /** @type {Error} */ (e).message)
         }
     })
 }
@@ -60,26 +60,31 @@ function executeDecision(decision) {
  * Orchestrates the full data-fetch -> analysis -> execution pipeline.
  */
 function main() {
-    Logger.log('=== eToro & Gemini Trading Bot - Execution Started ===')
+    console.log('=== eToro & Gemini Trading Bot - Execution Started ===')
 
     try {
         // 0. Check if US markets are open
         if (!isMarketOpen()) {
-            Logger.log('US markets are currently closed. Skipping execution.')
-            Logger.log('=== Execution Complete ===')
+            console.log('US markets are currently closed. Skipping execution.')
+            console.log('=== Execution Complete ===')
             return
         }
 
         // 1. Resolve instrument IDs for watchlist symbols
-        Logger.log('Step 1/6: Resolving instrument IDs for watchlist...')
+        console.log('Step 1/6: Resolving instrument IDs for watchlist...')
         /** @type {InstrumentMap} */
         var instrumentMap = {}
         WATCHLIST.forEach(function (symbol) {
             try {
                 instrumentMap[symbol] = getInstrumentId(symbol)
-                Logger.log('  ' + symbol + ' -> ID ' + instrumentMap[symbol])
+                console.log('  ' + symbol + ' -> ID ' + instrumentMap[symbol])
             } catch (e) {
-                Logger.log('  WARNING: Could not resolve ' + symbol + ': ' + e.message)
+                console.warn(
+                    '  WARNING: Could not resolve ' +
+                        symbol +
+                        ': ' +
+                        /** @type {Error} */ (e).message,
+                )
             }
         })
 
@@ -89,24 +94,29 @@ function main() {
         }
 
         // 2. Fetch real-time market rates
-        Logger.log('Step 2/6: Fetching market rates...')
+        console.log('Step 2/6: Fetching market rates...')
         var ratesData = getMarketRates(instrumentIds)
-        Logger.log('  Received rates for ' + ratesData.rates.length + ' instruments.')
+        console.log('  Received rates for ' + ratesData.rates.length + ' instruments.')
 
         // 3. Fetch historical candles for each instrument
-        Logger.log('Step 3/6: Fetching historical candles (20 hourly)...')
+        console.log('Step 3/6: Fetching historical candles (20 hourly)...')
         /** @type {CandlesMap} */
         var candlesMap = {}
         for (var symbol in instrumentMap) {
             try {
                 candlesMap[symbol] = getHistoricalCandles(instrumentMap[symbol], 'OneHour', 20)
             } catch (e) {
-                Logger.log('  WARNING: Could not fetch candles for ' + symbol + ': ' + e.message)
+                console.warn(
+                    '  WARNING: Could not fetch candles for ' +
+                        symbol +
+                        ': ' +
+                        /** @type {Error} */ (e).message,
+                )
             }
         }
 
         // 4. Fetch demo portfolio (P&L, positions, cash)
-        Logger.log('Step 4/6: Fetching demo portfolio...')
+        console.log('Step 4/6: Fetching demo portfolio...')
         var portfolio = getDemoPortfolio()
         var credit = portfolio.clientPortfolio.credit
         var positions = portfolio.clientPortfolio.positions || []
@@ -116,13 +126,13 @@ function main() {
         }, 0)
         var availableCash = credit - pendingAmount
 
-        Logger.log('  Credit: $' + credit.toFixed(2))
-        Logger.log('  Pending orders total: $' + pendingAmount.toFixed(2))
-        Logger.log('  Available cash: $' + availableCash.toFixed(2))
-        Logger.log('  Open positions: ' + positions.length)
+        console.log('  Credit: $' + credit.toFixed(2))
+        console.log('  Pending orders total: $' + pendingAmount.toFixed(2))
+        console.log('  Available cash: $' + availableCash.toFixed(2))
+        console.log('  Open positions: ' + positions.length)
 
         // 5. Send data to Gemini for analysis
-        Logger.log('Step 5/6: Sending market data to Gemini for analysis...')
+        console.log('Step 5/6: Sending market data to Gemini for analysis...')
         var prompt = buildGeminiPrompt(
             instrumentMap,
             ratesData,
@@ -131,15 +141,15 @@ function main() {
             availableCash,
         )
         var aiDecision = askGemini(prompt)
-        Logger.log('  Gemini responded with ' + (aiDecision.actions || []).length + ' action(s).')
+        console.log('  Gemini responded with ' + (aiDecision.actions || []).length + ' action(s).')
 
         // 6. Execute AI decision
-        Logger.log('Step 6/6: Executing AI decision...')
+        console.log('Step 6/6: Executing AI decision...')
         executeDecision(aiDecision)
 
-        Logger.log('=== Execution Complete ===')
+        console.log('=== Execution Complete ===')
     } catch (error) {
-        Logger.log('CRITICAL ERROR: ' + error.toString())
+        console.error('CRITICAL ERROR: ' + String(error))
     }
 }
 
@@ -147,39 +157,39 @@ function main() {
 
 /** Quick test: verify eToro API connectivity by searching for VOO. */
 function testEtoroConnection() {
-    Logger.log('Testing eToro API connection...')
+    console.log('Testing eToro API connection...')
     try {
         var data = searchInstrument('VOO')
-        Logger.log('SUCCESS: Found ' + data.totalItems + ' result(s) for VOO.')
+        console.log('SUCCESS: Found ' + data.totalItems + ' result(s) for VOO.')
         if (data.items && data.items[0]) {
-            Logger.log('  Instrument ID: ' + data.items[0].instrumentId)
-            Logger.log('  Display Name: ' + data.items[0].displayname)
+            console.log('  Instrument ID: ' + data.items[0].instrumentId)
+            console.log('  Display Name: ' + data.items[0].displayname)
         }
     } catch (e) {
-        Logger.log('FAILED: ' + e.message)
+        console.error('FAILED: ' + /** @type {Error} */ (e).message)
     }
 }
 
 /** Quick test: verify demo portfolio endpoint. */
 function testGetPortfolio() {
-    Logger.log('Testing demo portfolio endpoint...')
+    console.log('Testing demo portfolio endpoint...')
     try {
         var portfolio = getDemoPortfolio()
         var credit = portfolio.clientPortfolio.credit
         var positions = (portfolio.clientPortfolio.positions || []).length
-        Logger.log('SUCCESS: Credit = $' + credit + ' | Open positions: ' + positions)
+        console.log('SUCCESS: Credit = $' + credit + ' | Open positions: ' + positions)
     } catch (e) {
-        Logger.log('FAILED: ' + e.message)
+        console.error('FAILED: ' + /** @type {Error} */ (e).message)
     }
 }
 
 /** Quick test: verify Gemini API connectivity. */
 function testGeminiConnection() {
-    Logger.log('Testing Gemini API connection...')
+    console.log('Testing Gemini API connection...')
     try {
         var result = askGemini('Respond with exactly this JSON: {"status": "ok"}')
-        Logger.log('SUCCESS: ' + JSON.stringify(result))
+        console.log('SUCCESS: ' + JSON.stringify(result))
     } catch (e) {
-        Logger.log('FAILED: ' + e.message)
+        console.error('FAILED: ' + /** @type {Error} */ (e).message)
     }
 }

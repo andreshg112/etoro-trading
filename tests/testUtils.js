@@ -10,6 +10,10 @@ import { fileURLToPath } from 'url'
 let currentSuite = null
 let suiteResults = []
 
+// Save a reference to the real console before any mocks can overwrite it.
+// Test framework output (describe, it, printSummary) always uses this.
+const _realLog = console.log.bind(console)
+
 /**
  * Test suite (like vitest's describe)
  * @param {string} name - Suite name
@@ -24,7 +28,7 @@ export function describe(name, fn) {
     }
     suiteResults.push(currentSuite)
 
-    console.log(`\n=== ${name} ===`)
+    _realLog(`\n=== ${name} ===`)
     fn()
 }
 
@@ -37,12 +41,12 @@ export function it(name, fn) {
     try {
         fn()
         currentSuite.passed++
-        console.log('✓ ' + name)
+        _realLog('✓ ' + name)
     } catch (error) {
         currentSuite.failed++
-        console.log('✗ ' + name)
+        _realLog('✗ ' + name)
         if (error.message) {
-            console.log('  ' + error.message)
+            _realLog('  ' + error.message)
         }
     }
 }
@@ -134,10 +138,10 @@ export function printSummary() {
     const totalFailed = suiteResults.reduce((sum, suite) => sum + suite.failed, 0)
     const total = totalPassed + totalFailed
 
-    console.log('\n=== Test Summary ===')
-    console.log(`Passed: ${totalPassed}`)
-    console.log(`Failed: ${totalFailed}`)
-    console.log(`Total: ${total}`)
+    _realLog('\n=== Test Summary ===')
+    _realLog(`Passed: ${totalPassed}`)
+    _realLog(`Failed: ${totalFailed}`)
+    _realLog(`Total: ${total}`)
 
     return { passed: totalPassed, failed: totalFailed, total }
 }
@@ -220,9 +224,19 @@ export function installGasMocks(options = {}) {
     const state = { response: null }
 
     // Install globals
-    global.Logger = options.captureLog
-        ? { log: (/** @type {string} */ msg) => logOutput.push(msg) }
-        : { log: () => {} }
+    // Overwrite global.console so eval'd source-file calls are captured/silenced.
+    // The test framework uses _realLog (saved before mocks) so it's unaffected.
+    global.console = /** @type {any} */ ({
+        log: (/** @type {string} */ msg) => {
+            if (options.captureLog) logOutput.push(String(msg))
+        },
+        warn: (/** @type {string} */ msg) => {
+            if (options.captureLog) logOutput.push(String(msg))
+        },
+        error: (/** @type {string} */ msg) => {
+            if (options.captureLog) logOutput.push(String(msg))
+        },
+    })
 
     global.PropertiesService = {
         getScriptProperties: () => ({
