@@ -11,7 +11,7 @@ var ETORO_BASE_URL = 'https://public-api.etoro.com'
 var GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 
 /** Assets to monitor for trading opportunities */
-var WATCHLIST = ['VOO', 'SCHD', 'JNJ', 'KO', 'PG', 'SLV', 'GLDM']
+var WATCHLIST = ['TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'TQQQ', 'BTC', 'ETH']
 
 // ── Utility Functions ──────────────────────────────────────────────────────
 

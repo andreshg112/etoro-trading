@@ -15,8 +15,8 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
 
 **Current Portfolio & Strategy:**
 
-- **Experimental Scope:** The bot has full autonomy to make buy/sell decisions. It is not restricted to conservative or long-term holds.
-- **Existing Assets (for context):** VOO, SCHD, JNJ, KO, PG, SLV, GLDM. The bot can evaluate these or look for new short-term opportunities.
+- **Experimental Scope:** The bot has full autonomy to make buy/sell decisions. The primary goal is to trade high-volatility assets (Tech stocks, Leveraged ETFs, Crypto) to capture intraday price swings. The previous conservative dividend strategy has been abandoned.
+- **Existing Assets (for context):** TSLA, NVDA, AMD, AAPL, META, TQQQ, BTC, ETH. The bot actively trades these high-volatility instruments for short-term momentum plays.
 - **Funding:** The bot will operate using the "Available Cash" inside the eToro virtual account to find daily opportunities and compound short-term gains.
 
 ## Architecture & Data Flow

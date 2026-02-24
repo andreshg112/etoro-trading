@@ -48,16 +48,16 @@ function runTests() {
             assertEqual(GEMINI_BASE_URL, 'https://generativelanguage.googleapis.com/v1beta')
         })
 
-        it('WATCHLIST should contain 7 symbols', () => {
-            assertEqual(WATCHLIST.length, 7)
+        it('WATCHLIST should contain 8 symbols', () => {
+            assertEqual(WATCHLIST.length, 8)
         })
 
-        it('WATCHLIST should include VOO', () => {
-            assert(WATCHLIST.includes('VOO'), 'WATCHLIST should include VOO')
+        it('WATCHLIST should include TSLA', () => {
+            assert(WATCHLIST.includes('TSLA'), 'WATCHLIST should include TSLA')
         })
 
-        it('WATCHLIST should include GLDM', () => {
-            assert(WATCHLIST.includes('GLDM'), 'WATCHLIST should include GLDM')
+        it('WATCHLIST should include BTC', () => {
+            assert(WATCHLIST.includes('BTC'), 'WATCHLIST should include BTC')
         })
     })
 
