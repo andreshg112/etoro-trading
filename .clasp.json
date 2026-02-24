@@ -1,6 +1,7 @@
 {
     "scriptId": "1wJEGAnZlSkD0oTQjb2D0Z4511WgO9zMMKCuxQqubAzvirydiv_fxPy-_",
     "rootDir": "",
+    "projectId": "1063336365515",
     "scriptExtensions": [
         ".js",
         ".gs"
@@ -11,6 +12,5 @@
     "jsonExtensions": [
         ".json"
     ],
-    "filePushOrder": [],
-    "skipSubdirectories": false
+    "filePushOrder": []
 }
