@@ -241,6 +241,9 @@ export function installGasMocks(options = {}) {
     global.PropertiesService = {
         getScriptProperties: () => ({
             getProperty: (/** @type {string} */ key) => properties[key] || null,
+            setProperty: (/** @type {string} */ key, /** @type {string} */ value) => {
+                properties[key] = value
+            },
         }),
     }
 

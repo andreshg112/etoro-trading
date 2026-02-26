@@ -20,6 +20,7 @@ const {
     capturedRequests,
     resetMocks,
     setMockResponse: mockResponse,
+    setProperties,
 } = installGasMocks({
     properties: { ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' },
 })
@@ -61,6 +62,7 @@ function runTests() {
     describe('getInstrumentId', () => {
         it('Should return instrumentId for exact match', () => {
             resetMocks()
+            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
             mockResponse(200, {
                 items: [
                     { instrumentId: 9999, internalSymbolFull: 'VOO_OTHER' },
@@ -74,6 +76,7 @@ function runTests() {
 
         it('Should fallback to first item if no exact match', () => {
             resetMocks()
+            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
             mockResponse(200, {
                 items: [{ instrumentId: 5555, internalSymbolFull: 'VOO.L' }],
                 totalItems: 1,
@@ -84,14 +87,42 @@ function runTests() {
 
         it('Should throw when no items returned', () => {
             resetMocks()
+            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
             mockResponse(200, { items: [], totalItems: 0 })
             assertThrows(() => getInstrumentId('FAKE'), 'Instrument not found: FAKE')
         })
 
         it('Should throw when items is missing', () => {
             resetMocks()
+            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
             mockResponse(200, { totalItems: 0 })
             assertThrows(() => getInstrumentId('MISSING'), 'Instrument not found')
+        })
+
+        it('Should cache resolved ID in Script Properties', () => {
+            resetMocks()
+            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
+            mockResponse(200, {
+                items: [{ instrumentId: 7777, internalSymbolFull: 'CACHE_TEST' }],
+                totalItems: 1,
+            })
+            getInstrumentId('CACHE_TEST')
+            var cached = global.PropertiesService.getScriptProperties().getProperty(
+                'INSTRUMENT_ID_CACHE_TEST',
+            )
+            assertEqual(cached, '7777')
+        })
+
+        it('Should return cached ID without calling search API', () => {
+            resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                INSTRUMENT_ID_CACHED_SYM: '4242',
+            })
+            var id = getInstrumentId('CACHED_SYM')
+            assertEqual(id, 4242)
+            assertEqual(capturedRequests.length, 0)
         })
     })
 

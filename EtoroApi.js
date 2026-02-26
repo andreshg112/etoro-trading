@@ -16,10 +16,17 @@ function searchInstrument(symbol) {
 
 /**
  * Resolves a ticker symbol to its numeric eToro instrument ID.
+ * Uses Script Properties as a cache to avoid redundant search API calls.
  * @param {string} symbol - Ticker symbol
  * @returns {number} Instrument ID
  */
 function getInstrumentId(symbol) {
+    var cacheKey = 'INSTRUMENT_ID_' + symbol
+    var cached = PropertiesService.getScriptProperties().getProperty(cacheKey)
+    if (cached) {
+        return parseInt(cached, 10)
+    }
+
     var data = searchInstrument(symbol)
     if (!data.items || data.items.length === 0) {
         throw new Error('Instrument not found: ' + symbol)
@@ -27,7 +34,10 @@ function getInstrumentId(symbol) {
     var match = data.items.find(function (item) {
         return item.internalSymbolFull === symbol
     })
-    return (match || data.items[0]).instrumentId
+    var instrumentId = (match || data.items[0]).instrumentId
+
+    PropertiesService.getScriptProperties().setProperty(cacheKey, String(instrumentId))
+    return instrumentId
 }
 
 /**

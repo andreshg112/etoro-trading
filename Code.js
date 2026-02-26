@@ -15,8 +15,9 @@
 /**
  * Executes the actions returned by Gemini.
  * @param {GeminiDecision} decision - Gemini's parsed JSON response
+ * @param {EtoroPosition[]} currentPositions - Currently open positions from the portfolio
  */
-function executeDecision(decision) {
+function executeDecision(decision, currentPositions) {
     if (!decision || !decision.actions || decision.actions.length === 0) {
         console.log('  No actions recommended. Holding current positions.')
         if (decision && decision.analysis) {
@@ -49,6 +50,13 @@ function executeDecision(decision) {
             } else if (action.type === 'SELL_CLOSE') {
                 if (!action.positionId) {
                     throw new Error('Missing positionId for SELL_CLOSE action')
+                }
+
+                var validPosition = currentPositions.find(function (p) {
+                    return p.positionId === action.positionId
+                })
+                if (!validPosition) {
+                    throw new Error('AI hallucinated invalid positionId: ' + action.positionId)
                 }
 
                 var closeResult = closeDemoPosition(/** @type {number} */ (action.positionId))
@@ -154,7 +162,7 @@ function main() {
 
         // 6. Execute AI decision
         console.log('Step 6/6: Executing AI decision...')
-        executeDecision(aiDecision)
+        executeDecision(aiDecision, positions)
 
         console.log('=== Execution Complete ===')
     } catch (error) {

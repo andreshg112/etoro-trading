@@ -60,7 +60,7 @@ declare function buildGeminiPrompt(
 
 // ── Code.js globals ────────────────────────────────────────────────────────
 
-declare function executeDecision(decision: GeminiDecision): void
+declare function executeDecision(decision: GeminiDecision, currentPositions: EtoroPosition[]): void
 declare function main(): void
 declare function testEtoroConnection(): void
 declare function testGetPortfolio(): void

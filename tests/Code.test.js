@@ -27,35 +27,35 @@ function runTests() {
         resetMocks()
 
         it('Should log holding message when actions is empty', () => {
-            executeDecision({ analysis: 'Markets stable', actions: [] })
+            executeDecision({ analysis: 'Markets stable', actions: [] }, [])
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
 
         it('Should log analysis when provided', () => {
             logOutput.length = 0
-            executeDecision({ analysis: 'Sideways market', actions: [] })
+            executeDecision({ analysis: 'Sideways market', actions: [] }, [])
             var log = getLogText()
             assertContains(log, 'Sideways market')
         })
 
         it('Should handle null decision gracefully', () => {
             logOutput.length = 0
-            executeDecision(null)
+            executeDecision(null, [])
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
 
         it('Should handle undefined decision gracefully', () => {
             logOutput.length = 0
-            executeDecision(undefined)
+            executeDecision(undefined, [])
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
 
         it('Should handle decision with missing actions', () => {
             logOutput.length = 0
-            executeDecision({ analysis: 'Test' })
+            executeDecision({ analysis: 'Test' }, [])
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
@@ -66,20 +66,23 @@ function runTests() {
         registerMockResponse('demo/market-open-orders', 200, { orderId: 12345 })
 
         it('Should log BUY action details', () => {
-            executeDecision({
-                analysis: 'Bullish trend on VOO',
-                actions: [
-                    {
-                        type: 'BUY',
-                        symbol: 'VOO',
-                        instrumentId: 1234,
-                        amount: 500,
-                        stopLossRate: 480,
-                        takeProfitRate: 520,
-                        reason: 'Strong uptrend',
-                    },
-                ],
-            })
+            executeDecision(
+                {
+                    analysis: 'Bullish trend on VOO',
+                    actions: [
+                        {
+                            type: 'BUY',
+                            symbol: 'VOO',
+                            instrumentId: 1234,
+                            amount: 500,
+                            stopLossRate: 480,
+                            takeProfitRate: 520,
+                            reason: 'Strong uptrend',
+                        },
+                    ],
+                },
+                [],
+            )
             var log = getLogText()
             assertContains(log, 'BUY')
             assertContains(log, 'VOO')
@@ -113,17 +116,20 @@ function runTests() {
         registerMockResponse('market-close-orders/positions/9001', 200, { closed: true })
 
         it('Should log SELL_CLOSE action details', () => {
-            executeDecision({
-                analysis: 'Take profit on JNJ',
-                actions: [
-                    {
-                        type: 'SELL_CLOSE',
-                        symbol: 'JNJ',
-                        positionId: 9001,
-                        reason: 'Target reached',
-                    },
-                ],
-            })
+            executeDecision(
+                {
+                    analysis: 'Take profit on JNJ',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'JNJ',
+                            positionId: 9001,
+                            reason: 'Target reached',
+                        },
+                    ],
+                },
+                [{ positionId: 9001 }],
+            )
             var log = getLogText()
             assertContains(log, 'SELL_CLOSE')
             assertContains(log, 'JNJ')
@@ -142,16 +148,19 @@ function runTests() {
         resetMocks()
 
         it('Should log unknown action type', () => {
-            executeDecision({
-                analysis: 'Test',
-                actions: [
-                    {
-                        type: 'SHORT',
-                        symbol: 'AAPL',
-                        reason: 'Test',
-                    },
-                ],
-            })
+            executeDecision(
+                {
+                    analysis: 'Test',
+                    actions: [
+                        {
+                            type: 'SHORT',
+                            symbol: 'AAPL',
+                            reason: 'Test',
+                        },
+                    ],
+                },
+                [],
+            )
             var log = getLogText()
             assertContains(log, 'Unknown action type')
         })
@@ -163,24 +172,27 @@ function runTests() {
         registerMockResponse('market-close-orders/positions/9001', 200, { closed: true })
 
         it('Should process all actions in sequence', () => {
-            executeDecision({
-                analysis: 'Rebalancing',
-                actions: [
-                    {
-                        type: 'SELL_CLOSE',
-                        symbol: 'JNJ',
-                        positionId: 9001,
-                        reason: 'Sell',
-                    },
-                    {
-                        type: 'BUY',
-                        symbol: 'VOO',
-                        instrumentId: 1234,
-                        amount: 200,
-                        reason: 'Buy the dip',
-                    },
-                ],
-            })
+            executeDecision(
+                {
+                    analysis: 'Rebalancing',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'JNJ',
+                            positionId: 9001,
+                            reason: 'Sell',
+                        },
+                        {
+                            type: 'BUY',
+                            symbol: 'VOO',
+                            instrumentId: 1234,
+                            amount: 200,
+                            reason: 'Buy the dip',
+                        },
+                    ],
+                },
+                [{ positionId: 9001 }],
+            )
             var log = getLogText()
             assertContains(log, 'SELL_CLOSE')
             assertContains(log, 'BUY')
@@ -203,20 +215,75 @@ function runTests() {
         registerMockResponse('demo/market-open-orders', 400, '{"error": "Insufficient funds"}')
 
         it('Should log execution error without crashing', () => {
-            executeDecision({
-                analysis: 'Test error handling',
-                actions: [
-                    {
-                        type: 'BUY',
-                        symbol: 'VOO',
-                        instrumentId: 1234,
-                        amount: 999999,
-                        reason: 'Should fail',
-                    },
-                ],
-            })
+            executeDecision(
+                {
+                    analysis: 'Test error handling',
+                    actions: [
+                        {
+                            type: 'BUY',
+                            symbol: 'VOO',
+                            instrumentId: 1234,
+                            amount: 999999,
+                            reason: 'Should fail',
+                        },
+                    ],
+                },
+                [],
+            )
             var log = getLogText()
             assertContains(log, 'EXECUTION ERROR')
+        })
+    })
+
+    describe('executeDecision — hallucinated positionId', () => {
+        resetMocks()
+        registerMockResponse('market-close-orders/positions/2', 200, { closed: true })
+
+        it('Should reject positionId not present in currentPositions', () => {
+            executeDecision(
+                {
+                    analysis: 'Sell recommendation',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'TSLA',
+                            positionId: 2,
+                            reason: 'Take profit',
+                        },
+                    ],
+                },
+                [{ positionId: 123456789 }, { positionId: 987654321 }],
+            )
+            var log = getLogText()
+            assertContains(log, 'AI hallucinated invalid positionId: 2')
+        })
+
+        it('Should not call close endpoint for hallucinated positionId', () => {
+            var closeReqs = capturedRequests.filter(function (r) {
+                return r.url.includes('market-close-orders')
+            })
+            assertEqual(closeReqs.length, 0)
+        })
+
+        it('Should allow valid positionId from currentPositions', () => {
+            resetMocks()
+            registerMockResponse('market-close-orders/positions/123456789', 200, { closed: true })
+            executeDecision(
+                {
+                    analysis: 'Sell recommendation',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'TSLA',
+                            positionId: 123456789,
+                            reason: 'Take profit',
+                        },
+                    ],
+                },
+                [{ positionId: 123456789 }],
+            )
+            var log = getLogText()
+            assertContains(log, 'Position closed')
         })
     })
 
