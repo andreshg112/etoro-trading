@@ -210,6 +210,8 @@ export function installGasMocks(options = {}) {
         ETORO_API_KEY: 'test-api-key',
         ETORO_USER_KEY: 'test-user-key',
         GEMINI_API_KEY: 'test-gemini-key',
+        WATCHLIST: 'TSLA,NVDA,AMD,AAPL,META,TQQQ,BTC,ETH',
+        ACCOUNT_MODE: 'DEMO',
     }
     let properties = { ...(options.properties || defaultProps) }
     const uuid = options.uuid || 'mock-uuid'

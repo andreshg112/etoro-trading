@@ -10,8 +10,15 @@
 var ETORO_BASE_URL = 'https://public-api.etoro.com'
 var GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 
-/** Assets to monitor for trading opportunities */
-var WATCHLIST = ['TSLA', 'NVDA', 'AMD', 'AAPL', 'META', 'TQQQ', 'BTC', 'ETH']
+/** Assets to monitor for trading opportunities (read from Script Properties) */
+var WATCHLIST = getScriptProperty('WATCHLIST')
+    .split(',')
+    .map(function (s) {
+        return s.trim()
+    })
+
+/** Account mode: 'DEMO' or 'REAL' (read from Script Properties) */
+var ACCOUNT_MODE = getScriptProperty('ACCOUNT_MODE')
 
 // ── Utility Functions ──────────────────────────────────────────────────────
 

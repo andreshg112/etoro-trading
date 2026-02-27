@@ -72,15 +72,18 @@ function getHistoricalCandles(instrumentId, interval, count) {
 }
 
 /**
- * Retrieves the demo account portfolio: credit, positions, orders, and P&L.
+ * Retrieves the account portfolio: credit, positions, orders, and P&L.
+ * Uses ACCOUNT_MODE to target demo or real endpoint.
  * @returns {EtoroPortfolioResponse}
  */
-function getDemoPortfolio() {
-    return etoroFetch('/api/v1/trading/info/demo/pnl')
+function getPortfolio() {
+    var modeSegment = ACCOUNT_MODE === 'DEMO' ? 'demo/' : ''
+    return etoroFetch('/api/v1/trading/info/' + modeSegment + 'pnl')
 }
 
 /**
- * Opens a BUY or SELL position on the demo account by dollar amount.
+ * Opens a BUY or SELL position by dollar amount.
+ * Uses ACCOUNT_MODE to target demo or real endpoint.
  * @param {number} instrumentId
  * @param {number} amount - USD amount to invest
  * @param {boolean} [isBuy=true]
@@ -89,7 +92,8 @@ function getDemoPortfolio() {
  * @param {number} [takeProfitRate] - Take-profit price (omit or 0 to skip)
  * @returns {EtoroOrderResult}
  */
-function openDemoPosition(instrumentId, amount, isBuy, leverage, stopLossRate, takeProfitRate) {
+function openPosition(instrumentId, amount, isBuy, leverage, stopLossRate, takeProfitRate) {
+    var modeSegment = ACCOUNT_MODE === 'DEMO' ? 'demo/' : ''
     /** @type {Record<string, unknown>} */
     var payload = {
         InstrumentId: instrumentId,
@@ -104,21 +108,23 @@ function openDemoPosition(instrumentId, amount, isBuy, leverage, stopLossRate, t
         payload.TakeProfitRate = takeProfitRate
     }
     return etoroFetch(
-        '/api/v1/trading/execution/demo/market-open-orders/by-amount',
+        '/api/v1/trading/execution/' + modeSegment + 'market-open-orders/by-amount',
         'post',
         payload,
     )
 }
 
 /**
- * Closes a demo position (full or partial).
+ * Closes a position (full or partial).
+ * Uses ACCOUNT_MODE to target demo or real endpoint.
  * @param {number} positionId
  * @param {number|null} [unitsToDeduct=null] - null for full close
  * @returns {EtoroCloseResult}
  */
-function closeDemoPosition(positionId, unitsToDeduct) {
+function closePosition(positionId, unitsToDeduct) {
+    var modeSegment = ACCOUNT_MODE === 'DEMO' ? 'demo/' : ''
     return etoroFetch(
-        '/api/v1/trading/execution/demo/market-close-orders/positions/' + positionId,
+        '/api/v1/trading/execution/' + modeSegment + 'market-close-orders/positions/' + positionId,
         'post',
         { UnitsToDeduct: unitsToDeduct || null },
     )

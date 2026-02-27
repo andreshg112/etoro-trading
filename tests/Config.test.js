@@ -20,7 +20,16 @@ const {
     resetMocks: resetEnv,
     setMockResponse,
     setProperties,
-} = installGasMocks({ uuid: 'mock-uuid-1234-5678' })
+} = installGasMocks({
+    uuid: 'mock-uuid-1234-5678',
+    properties: {
+        ETORO_API_KEY: 'test-api-key',
+        ETORO_USER_KEY: 'test-user-key',
+        GEMINI_API_KEY: 'test-gemini-key',
+        WATCHLIST: 'TSLA,NVDA,AMD,AAPL,META,TQQQ,BTC,ETH',
+        ACCOUNT_MODE: 'DEMO',
+    },
+})
 
 loadSourceFiles('Config.js')
 
@@ -32,6 +41,8 @@ function resetMocks() {
         ETORO_API_KEY: 'test-api-key',
         ETORO_USER_KEY: 'test-user-key',
         GEMINI_API_KEY: 'test-gemini-key',
+        WATCHLIST: 'TSLA,NVDA,AMD,AAPL,META,TQQQ,BTC,ETH',
+        ACCOUNT_MODE: 'DEMO',
     })
     setMockResponse(200, { ok: true })
 }
@@ -58,6 +69,10 @@ function runTests() {
 
         it('WATCHLIST should include BTC', () => {
             assert(WATCHLIST.includes('BTC'), 'WATCHLIST should include BTC')
+        })
+
+        it('ACCOUNT_MODE should be DEMO', () => {
+            assertEqual(ACCOUNT_MODE, 'DEMO')
         })
     })
 

@@ -12,6 +12,7 @@
 declare const ETORO_BASE_URL: string
 declare const GEMINI_BASE_URL: string
 declare const WATCHLIST: string[]
+declare const ACCOUNT_MODE: string
 
 declare function getScriptProperty(key: string): string
 declare function getEtoroHeaders(): EtoroHeaders
@@ -31,10 +32,10 @@ declare function getHistoricalCandles(
     interval?: string,
     count?: number,
 ): EtoroCandleResponse
-declare function getDemoPortfolio(): EtoroPortfolioResponse
+declare function getPortfolio(): EtoroPortfolioResponse
 declare function isMarketOpen(): boolean
 
-declare function openDemoPosition(
+declare function openPosition(
     instrumentId: number,
     amount: number,
     isBuy?: boolean,
@@ -42,10 +43,7 @@ declare function openDemoPosition(
     stopLossRate?: number,
     takeProfitRate?: number,
 ): EtoroOrderResult
-declare function closeDemoPosition(
-    positionId: number,
-    unitsToDeduct?: number | null,
-): EtoroCloseResult
+declare function closePosition(positionId: number, unitsToDeduct?: number | null): EtoroCloseResult
 
 // ── GeminiApi.js globals ───────────────────────────────────────────────────
 

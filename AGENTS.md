@@ -32,7 +32,7 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
         - `x-api-key` — Public API key (from eToro developer portal).
         - `x-user-key` — User-specific key (generated in eToro Settings > Trading > API Key Management).
         - `x-request-id` — A unique UUID per request (generated via `Utilities.getUuid()`).
-    - **CRITICAL RULE:** Must use eToro's **Demo API endpoints** (paths containing `/demo/`) exclusively to prevent accidental real-money trades during development.
+    - **CRITICAL RULE:** Must use eToro's **Demo API endpoints** (paths containing `/demo/`) exclusively to prevent accidental real-money trades during development. The `ACCOUNT_MODE` script property controls this (`DEMO` or `REAL`).
 
     **Key Endpoints Used:**
     | Purpose | Method | Endpoint |
@@ -40,9 +40,9 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
     | Search instruments (resolve ticker → ID) | `GET` | `/api/v1/market-data/search?internalSymbolFull={SYMBOL}` |
     | Real-time market rates | `GET` | `/api/v1/market-data/instruments/rates?instrumentIds={IDS}` |
     | Historical OHLCV candles | `GET` | `/api/v1/market-data/instruments/{id}/history/candles/{dir}/{interval}/{count}` |
-    | Demo portfolio & P&L | `GET` | `/api/v1/trading/info/demo/pnl` |
-    | Open demo position (by amount) | `POST` | `/api/v1/trading/execution/demo/market-open-orders/by-amount` |
-    | Close demo position | `POST` | `/api/v1/trading/execution/demo/market-close-orders/positions/{positionId}` |
+    | Portfolio & P&L | `GET` | `/api/v1/trading/info/{mode}pnl` (mode = `demo/` or empty) |
+    | Open position (by amount) | `POST` | `/api/v1/trading/execution/{mode}market-open-orders/by-amount` |
+    | Close position | `POST` | `/api/v1/trading/execution/{mode}market-close-orders/positions/{positionId}` |
 
 3. **Analysis (Gemini API):**
     - Collects market rates, 20 hourly historical candles, and full portfolio state from eToro.
@@ -53,7 +53,7 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
     - **Risk Management:** Every BUY action must include `stopLossRate` and `takeProfitRate` for automated risk management.
 
 4. **Execution / Logging:**
-    - Parses Gemini's JSON response and executes each action via eToro's demo trading endpoints.
+    - Parses Gemini's JSON response and executes each action via eToro's trading endpoints (demo or real based on `ACCOUNT_MODE`).
     - All steps, decisions, and errors are logged via `console.log/warn/error()` for review in the Apps Script Executions panel.
 
 ## Security & Configuration Management
@@ -62,31 +62,35 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
 
 **Required Script Properties:**
 
-| Property         | Description                              |
-| ---------------- | ---------------------------------------- |
-| `ETORO_API_KEY`  | eToro Public API key                     |
-| `ETORO_USER_KEY` | eToro User key (from Settings > Trading) |
-| `GEMINI_API_KEY` | Google AI Studio (Gemini) API key        |
+| Property         | Description                                        |
+| ---------------- | -------------------------------------------------- |
+| `ETORO_API_KEY`  | eToro Public API key                               |
+| `ETORO_USER_KEY` | eToro User key (from Settings > Trading)           |
+| `GEMINI_API_KEY` | Google AI Studio (Gemini) API key                  |
+| `WATCHLIST`      | Comma-separated ticker symbols (e.g. `TSLA,NVDA`)  |
+| `ACCOUNT_MODE`   | `DEMO` or `REAL` — controls trading endpoint paths |
 
 ```javascript
 const scriptProperties = PropertiesService.getScriptProperties()
 const eToroApiKey = scriptProperties.getProperty('ETORO_API_KEY')
 const eToroUserKey = scriptProperties.getProperty('ETORO_USER_KEY')
 const geminiApiKey = scriptProperties.getProperty('GEMINI_API_KEY')
+const watchlist = scriptProperties.getProperty('WATCHLIST')
+const accountMode = scriptProperties.getProperty('ACCOUNT_MODE')
 
-if (!eToroApiKey || !eToroUserKey || !geminiApiKey) {
-    throw new Error('API keys are missing in Script Properties.')
+if (!eToroApiKey || !eToroUserKey || !geminiApiKey || !watchlist || !accountMode) {
+    throw new Error('Required script properties are missing.')
 }
 ```
 
 ## File Structure
 
-| File           | Responsibility                                                                                                                                                    |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Config.js`    | Constants (`ETORO_BASE_URL`, `GEMINI_BASE_URL`, `WATCHLIST`), `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`, `isMarketOpen`                                |
-| `EtoroApi.js`  | eToro API functions: `searchInstrument`, `getInstrumentId`, `getMarketRates`, `getHistoricalCandles`, `getDemoPortfolio`, `openDemoPosition`, `closeDemoPosition` |
-| `GeminiApi.js` | Gemini AI functions: `askGemini`, `buildGeminiPrompt`                                                                                                             |
-| `Code.js`      | Main entry point: `main()`, `executeDecision()`, and `test*()` functions                                                                                          |
+| File           | Responsibility                                                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Config.js`    | Constants (`ETORO_BASE_URL`, `GEMINI_BASE_URL`, `WATCHLIST`, `ACCOUNT_MODE`), `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`, `isMarketOpen`    |
+| `EtoroApi.js`  | eToro API functions: `searchInstrument`, `getInstrumentId`, `getMarketRates`, `getHistoricalCandles`, `getPortfolio`, `openPosition`, `closePosition` |
+| `GeminiApi.js` | Gemini AI functions: `askGemini`, `buildGeminiPrompt`                                                                                                 |
+| `Code.js`      | Main entry point: `main()`, `executeDecision()`, and `test*()` functions                                                                              |
 
 All files share a single global scope in Google Apps Script — no imports needed between them.
 
@@ -98,7 +102,7 @@ All files share a single global scope in Google Apps Script — no imports neede
 | `executeDecision()`      | Parses Gemini's JSON response and executes BUY (with SL/TP) / SELL_CLOSE actions            |
 | `isMarketOpen()`         | Returns `true` if US markets are open (Mon–Fri 09:30–16:00 ET)                              |
 | `testEtoroConnection()`  | Quick connectivity test against eToro search API                                            |
-| `testGetPortfolio()`     | Quick test of the demo portfolio/P&L endpoint                                               |
+| `testGetPortfolio()`     | Quick test of the portfolio/P&L endpoint                                                    |
 | `testGeminiConnection()` | Quick test of Gemini API connectivity                                                       |
 
 ## Testing
@@ -116,7 +120,7 @@ npm test
 | File                      | Covers                                                                                                                        |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `tests/Config.test.js`    | Constants, `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`, `isMarketOpen`                                               |
-| `tests/EtoroApi.test.js`  | All eToro API functions, endpoint URLs, payloads (incl. SL/TP), demo-safety                                                   |
+| `tests/EtoroApi.test.js`  | All eToro API functions, endpoint URLs, payloads (incl. SL/TP), DEMO/REAL mode switching                                      |
 | `tests/GeminiApi.test.js` | `askGemini`, `buildGeminiPrompt` structure (10% rule, SL/TP format, hourly candles), rate/position/candle mapping             |
 | `tests/Code.test.js`      | `executeDecision` (all action types, SL/TP passthrough, error handling), `main()` integration (market hours, OneHour candles) |
 

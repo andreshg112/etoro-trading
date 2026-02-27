@@ -39,7 +39,7 @@ function executeDecision(decision, currentPositions, instrumentMap) {
                     throw new Error('Missing instrumentId for BUY action')
                 }
 
-                var buyResult = openDemoPosition(
+                var buyResult = openPosition(
                     /** @type {number} */ (action.instrumentId),
                     /** @type {number} */ (action.amount),
                     true,
@@ -84,7 +84,7 @@ function executeDecision(decision, currentPositions, instrumentMap) {
                     console.log('     Auto-corrected positionId to: ' + targetPositionId)
                 }
 
-                var closeResult = closeDemoPosition(/** @type {number} */ (targetPositionId))
+                var closeResult = closePosition(/** @type {number} */ (targetPositionId))
                 console.log('     Position closed: ' + JSON.stringify(closeResult))
             } else {
                 console.log('     Unknown action type: ' + action.type)
@@ -157,9 +157,9 @@ function main() {
             }
         }
 
-        // 4. Fetch demo portfolio (P&L, positions, cash)
-        console.log('Step 4/6: Fetching demo portfolio...')
-        var portfolio = getDemoPortfolio()
+        // 4. Fetch portfolio (P&L, positions, cash)
+        console.log('Step 4/6: Fetching portfolio...')
+        var portfolio = getPortfolio()
         var credit = portfolio.clientPortfolio.credit
         var positions = portfolio.clientPortfolio.positions || []
         var pendingOrders = portfolio.clientPortfolio.ordersForOpen || []
@@ -212,11 +212,11 @@ function testEtoroConnection() {
     }
 }
 
-/** Quick test: verify demo portfolio endpoint. */
+/** Quick test: verify portfolio endpoint. */
 function testGetPortfolio() {
-    console.log('Testing demo portfolio endpoint...')
+    console.log('Testing portfolio endpoint...')
     try {
-        var portfolio = getDemoPortfolio()
+        var portfolio = getPortfolio()
         var credit = portfolio.clientPortfolio.credit
         var positions = (portfolio.clientPortfolio.positions || []).length
         console.log('SUCCESS: Credit = $' + credit + ' | Open positions: ' + positions)

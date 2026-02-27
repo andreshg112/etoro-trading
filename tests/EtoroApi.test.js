@@ -1,6 +1,6 @@
 /**
  * Unit tests for EtoroApi.js — searchInstrument, getInstrumentId, getMarketRates,
- * getHistoricalCandles, getDemoPortfolio, openDemoPosition, closeDemoPosition
+ * getHistoricalCandles, getPortfolio, openPosition, closePosition
  *
  * To run this file alone: node tests/EtoroApi.test.js
  */
@@ -8,6 +8,7 @@
 import {
     describe,
     it,
+    assert,
     assertEqual,
     assertThrows,
     assertContains,
@@ -22,7 +23,12 @@ const {
     setMockResponse: mockResponse,
     setProperties,
 } = installGasMocks({
-    properties: { ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' },
+    properties: {
+        ETORO_API_KEY: 'test-api-key',
+        ETORO_USER_KEY: 'test-user-key',
+        WATCHLIST: 'TSLA,NVDA',
+        ACCOUNT_MODE: 'DEMO',
+    },
 })
 
 loadSourceFiles('Config.js', 'EtoroApi.js')
@@ -62,7 +68,12 @@ function runTests() {
     describe('getInstrumentId', () => {
         it('Should return instrumentId for exact match', () => {
             resetMocks()
-            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, {
                 items: [
                     { instrumentId: 9999, internalSymbolFull: 'VOO_OTHER' },
@@ -76,7 +87,12 @@ function runTests() {
 
         it('Should fallback to first item if no exact match', () => {
             resetMocks()
-            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, {
                 items: [{ instrumentId: 5555, internalSymbolFull: 'VOO.L' }],
                 totalItems: 1,
@@ -87,21 +103,36 @@ function runTests() {
 
         it('Should throw when no items returned', () => {
             resetMocks()
-            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { items: [], totalItems: 0 })
             assertThrows(() => getInstrumentId('FAKE'), 'Instrument not found: FAKE')
         })
 
         it('Should throw when items is missing', () => {
             resetMocks()
-            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { totalItems: 0 })
             assertThrows(() => getInstrumentId('MISSING'), 'Instrument not found')
         })
 
         it('Should cache resolved ID in Script Properties', () => {
             resetMocks()
-            setProperties({ ETORO_API_KEY: 'test-api-key', ETORO_USER_KEY: 'test-user-key' })
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, {
                 items: [{ instrumentId: 7777, internalSymbolFull: 'CACHE_TEST' }],
                 totalItems: 1,
@@ -118,6 +149,8 @@ function runTests() {
             setProperties({
                 ETORO_API_KEY: 'test-api-key',
                 ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
                 INSTRUMENT_ID_CACHED_SYM: '4242',
             })
             var id = getInstrumentId('CACHED_SYM')
@@ -170,37 +203,85 @@ function runTests() {
         })
     })
 
-    describe('getDemoPortfolio', () => {
+    describe('getPortfolio — DEMO mode', () => {
         it('Should call the demo PnL endpoint', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { clientPortfolio: { credit: 10000 } })
-            getDemoPortfolio()
+            getPortfolio()
             assertContains(capturedRequests[0].url, '/api/v1/trading/info/demo/pnl')
         })
 
         it('Should use demo endpoint (not real)', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { clientPortfolio: { credit: 10000 } })
-            getDemoPortfolio()
+            getPortfolio()
             assertContains(capturedRequests[0].url, '/demo/')
         })
 
         it('Should return portfolio data', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, {
                 clientPortfolio: { credit: 50000, positions: [{ positionId: 1 }] },
             })
-            var result = getDemoPortfolio()
+            var result = getPortfolio()
             assertEqual(result.clientPortfolio.credit, 50000)
             assertEqual(result.clientPortfolio.positions.length, 1)
         })
     })
 
-    describe('openDemoPosition', () => {
+    describe('getPortfolio — REAL mode', () => {
+        it('Should call the real PnL endpoint without demo segment', () => {
+            resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'REAL',
+            })
+            global.ACCOUNT_MODE = 'REAL'
+            try {
+                mockResponse(200, { clientPortfolio: { credit: 10000 } })
+                getPortfolio()
+                assertContains(capturedRequests[0].url, '/api/v1/trading/info/pnl')
+                assert(
+                    !capturedRequests[0].url.includes('/demo/'),
+                    'Should NOT include /demo/ in URL',
+                )
+            } finally {
+                global.ACCOUNT_MODE = 'DEMO'
+            }
+        })
+    })
+
+    describe('openPosition — DEMO mode', () => {
         it('Should POST to demo open orders endpoint', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 100, true, 1)
+            openPosition(1234, 100, true, 1)
             assertContains(
                 capturedRequests[0].url,
                 '/api/v1/trading/execution/demo/market-open-orders/by-amount',
@@ -210,8 +291,14 @@ function runTests() {
 
         it('Should send correct payload for BUY', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 500, true, 2)
+            openPosition(1234, 500, true, 2)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.InstrumentId, 1234)
             assertEqual(payload.Amount, 500)
@@ -221,55 +308,97 @@ function runTests() {
 
         it('Should default isBuy to true', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 100)
+            openPosition(1234, 100)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.IsBuy, true)
         })
 
         it('Should default leverage to 1', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 100)
+            openPosition(1234, 100)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.Leverage, 1)
         })
 
         it('Should support SELL (isBuy=false)', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 100, false, 1)
+            openPosition(1234, 100, false, 1)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.IsBuy, false)
         })
 
         it('Should use demo endpoint (not real)', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 100, true, 1)
+            openPosition(1234, 100, true, 1)
             assertContains(capturedRequests[0].url, '/demo/')
         })
 
         it('Should include StopLossRate in payload when provided', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 500, true, 1, 480, 0)
+            openPosition(1234, 500, true, 1, 480, 0)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.StopLossRate, 480)
         })
 
         it('Should include TakeProfitRate in payload when provided', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 500, true, 1, 0, 520)
+            openPosition(1234, 500, true, 1, 0, 520)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.TakeProfitRate, 520)
         })
 
         it('Should include both SL and TP in payload when provided', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 500, true, 1, 480, 520)
+            openPosition(1234, 500, true, 1, 480, 520)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.StopLossRate, 480)
             assertEqual(payload.TakeProfitRate, 520)
@@ -277,26 +406,71 @@ function runTests() {
 
         it('Should omit StopLossRate from payload when 0', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 500, true, 1, 0, 0)
+            openPosition(1234, 500, true, 1, 0, 0)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.StopLossRate, undefined)
         })
 
         it('Should omit TakeProfitRate from payload when not provided', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { orderId: 999 })
-            openDemoPosition(1234, 500, true, 1)
+            openPosition(1234, 500, true, 1)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.TakeProfitRate, undefined)
         })
     })
 
-    describe('closeDemoPosition', () => {
+    describe('openPosition — REAL mode', () => {
+        it('Should POST to real open orders endpoint without demo segment', () => {
+            resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'REAL',
+            })
+            global.ACCOUNT_MODE = 'REAL'
+            try {
+                mockResponse(200, { orderId: 999 })
+                openPosition(1234, 100, true, 1)
+                assertContains(
+                    capturedRequests[0].url,
+                    '/api/v1/trading/execution/market-open-orders/by-amount',
+                )
+                assert(
+                    !capturedRequests[0].url.includes('/demo/'),
+                    'Should NOT include /demo/ in URL',
+                )
+            } finally {
+                global.ACCOUNT_MODE = 'DEMO'
+            }
+        })
+    })
+
+    describe('closePosition — DEMO mode', () => {
         it('Should POST to demo close position endpoint with positionId', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { closed: true })
-            closeDemoPosition(98765)
+            closePosition(98765)
             assertContains(
                 capturedRequests[0].url,
                 '/api/v1/trading/execution/demo/market-close-orders/positions/98765',
@@ -306,17 +480,56 @@ function runTests() {
 
         it('Should send null UnitsToDeduct for full close by default', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { closed: true })
-            closeDemoPosition(98765)
+            closePosition(98765)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.UnitsToDeduct, null)
         })
 
         it('Should use demo endpoint (not real)', () => {
             resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
             mockResponse(200, { closed: true })
-            closeDemoPosition(98765)
+            closePosition(98765)
             assertContains(capturedRequests[0].url, '/demo/')
+        })
+    })
+
+    describe('closePosition — REAL mode', () => {
+        it('Should POST to real close endpoint without demo segment', () => {
+            resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'REAL',
+            })
+            global.ACCOUNT_MODE = 'REAL'
+            try {
+                mockResponse(200, { closed: true })
+                closePosition(98765)
+                assertContains(
+                    capturedRequests[0].url,
+                    '/api/v1/trading/execution/market-close-orders/positions/98765',
+                )
+                assert(
+                    !capturedRequests[0].url.includes('/demo/'),
+                    'Should NOT include /demo/ in URL',
+                )
+            } finally {
+                global.ACCOUNT_MODE = 'DEMO'
+            }
         })
     })
 
