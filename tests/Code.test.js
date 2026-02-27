@@ -27,35 +27,35 @@ function runTests() {
         resetMocks()
 
         it('Should log holding message when actions is empty', () => {
-            executeDecision({ analysis: 'Markets stable', actions: [] }, [])
+            executeDecision({ analysis: 'Markets stable', actions: [] }, [], {})
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
 
         it('Should log analysis when provided', () => {
             logOutput.length = 0
-            executeDecision({ analysis: 'Sideways market', actions: [] }, [])
+            executeDecision({ analysis: 'Sideways market', actions: [] }, [], {})
             var log = getLogText()
             assertContains(log, 'Sideways market')
         })
 
         it('Should handle null decision gracefully', () => {
             logOutput.length = 0
-            executeDecision(null, [])
+            executeDecision(null, [], {})
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
 
         it('Should handle undefined decision gracefully', () => {
             logOutput.length = 0
-            executeDecision(undefined, [])
+            executeDecision(undefined, [], {})
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
 
         it('Should handle decision with missing actions', () => {
             logOutput.length = 0
-            executeDecision({ analysis: 'Test' }, [])
+            executeDecision({ analysis: 'Test' }, [], {})
             var log = getLogText()
             assertContains(log, 'No actions recommended')
         })
@@ -82,6 +82,7 @@ function runTests() {
                     ],
                 },
                 [],
+                {},
             )
             var log = getLogText()
             assertContains(log, 'BUY')
@@ -129,6 +130,7 @@ function runTests() {
                     ],
                 },
                 [{ positionId: 9001 }],
+                {},
             )
             var log = getLogText()
             assertContains(log, 'SELL_CLOSE')
@@ -160,6 +162,7 @@ function runTests() {
                     ],
                 },
                 [],
+                {},
             )
             var log = getLogText()
             assertContains(log, 'Unknown action type')
@@ -192,6 +195,7 @@ function runTests() {
                     ],
                 },
                 [{ positionId: 9001 }],
+                {},
             )
             var log = getLogText()
             assertContains(log, 'SELL_CLOSE')
@@ -229,17 +233,18 @@ function runTests() {
                     ],
                 },
                 [],
+                {},
             )
             var log = getLogText()
             assertContains(log, 'EXECUTION ERROR')
         })
     })
 
-    describe('executeDecision — hallucinated positionId', () => {
+    describe('executeDecision — auto-healing hallucinated positionId', () => {
         resetMocks()
-        registerMockResponse('market-close-orders/positions/2', 200, { closed: true })
+        registerMockResponse('market-close-orders/positions/123456789', 200, { closed: true })
 
-        it('Should reject positionId not present in currentPositions', () => {
+        it('Should auto-correct when single position matches symbol', () => {
             executeDecision(
                 {
                     analysis: 'Sell recommendation',
@@ -252,20 +257,23 @@ function runTests() {
                         },
                     ],
                 },
-                [{ positionId: 123456789 }, { positionId: 987654321 }],
+                [{ positionId: 123456789, instrumentId: 5000 }],
+                { TSLA: 5000 },
             )
             var log = getLogText()
-            assertContains(log, 'AI hallucinated invalid positionId: 2')
+            assertContains(log, 'AI hallucinated positionId: 2')
+            assertContains(log, 'Auto-corrected positionId to: 123456789')
+            assertContains(log, 'Position closed')
         })
 
-        it('Should not call close endpoint for hallucinated positionId', () => {
+        it('Should call close endpoint with corrected positionId', () => {
             var closeReqs = capturedRequests.filter(function (r) {
-                return r.url.includes('market-close-orders')
+                return r.url.includes('market-close-orders/positions/123456789')
             })
-            assertEqual(closeReqs.length, 0)
+            assert(closeReqs.length > 0, 'Should have called close endpoint with corrected ID')
         })
 
-        it('Should allow valid positionId from currentPositions', () => {
+        it('Should NOT auto-correct when positionId is already valid', () => {
             resetMocks()
             registerMockResponse('market-close-orders/positions/123456789', 200, { closed: true })
             executeDecision(
@@ -280,10 +288,78 @@ function runTests() {
                         },
                     ],
                 },
-                [{ positionId: 123456789 }],
+                [{ positionId: 123456789, instrumentId: 5000 }],
+                { TSLA: 5000 },
             )
             var log = getLogText()
+            assert(!log.includes('Auto-corrected'), 'Should not auto-correct a valid positionId')
             assertContains(log, 'Position closed')
+        })
+
+        it('Should fail when multiple positions match the symbol', () => {
+            resetMocks()
+            executeDecision(
+                {
+                    analysis: 'Sell recommendation',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'TSLA',
+                            positionId: 2,
+                            reason: 'Take profit',
+                        },
+                    ],
+                },
+                [
+                    { positionId: 111111111, instrumentId: 5000 },
+                    { positionId: 222222222, instrumentId: 5000 },
+                ],
+                { TSLA: 5000 },
+            )
+            var log = getLogText()
+            assertContains(log, 'Multiple open positions for TSLA')
+        })
+
+        it('Should fail when no positions match the symbol', () => {
+            resetMocks()
+            executeDecision(
+                {
+                    analysis: 'Sell recommendation',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'TSLA',
+                            positionId: 2,
+                            reason: 'Take profit',
+                        },
+                    ],
+                },
+                [{ positionId: 123456789, instrumentId: 9999 }],
+                { TSLA: 5000 },
+            )
+            var log = getLogText()
+            assertContains(log, 'No open positions found for symbol: TSLA')
+        })
+
+        it('Should fail when symbol is not in instrumentMap', () => {
+            resetMocks()
+            executeDecision(
+                {
+                    analysis: 'Sell recommendation',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'UNKNOWN',
+                            positionId: 2,
+                            reason: 'Take profit',
+                        },
+                    ],
+                },
+                [{ positionId: 123456789, instrumentId: 5000 }],
+                { TSLA: 5000 },
+            )
+            var log = getLogText()
+            assertContains(log, 'No open positions found for symbol: UNKNOWN')
         })
     })
 

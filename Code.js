@@ -16,8 +16,9 @@
  * Executes the actions returned by Gemini.
  * @param {GeminiDecision} decision - Gemini's parsed JSON response
  * @param {EtoroPosition[]} currentPositions - Currently open positions from the portfolio
+ * @param {InstrumentMap} instrumentMap - Maps ticker symbols to eToro instrument IDs
  */
-function executeDecision(decision, currentPositions) {
+function executeDecision(decision, currentPositions, instrumentMap) {
     if (!decision || !decision.actions || decision.actions.length === 0) {
         console.log('  No actions recommended. Holding current positions.')
         if (decision && decision.analysis) {
@@ -52,14 +53,41 @@ function executeDecision(decision, currentPositions) {
                     throw new Error('Missing positionId for SELL_CLOSE action')
                 }
 
+                var targetPositionId = action.positionId
+
                 var validPosition = currentPositions.find(function (p) {
-                    return p.positionId === action.positionId
+                    return p.positionId === targetPositionId
                 })
+
                 if (!validPosition) {
-                    throw new Error('AI hallucinated invalid positionId: ' + action.positionId)
+                    console.warn(
+                        '     AI hallucinated positionId: ' +
+                            targetPositionId +
+                            '. Attempting auto-correction using symbol: ' +
+                            action.symbol,
+                    )
+                    var resolvedInstrumentId = instrumentMap[action.symbol]
+                    if (!resolvedInstrumentId) {
+                        throw new Error('No open positions found for symbol: ' + action.symbol)
+                    }
+                    var matchingPositions = currentPositions.filter(function (p) {
+                        return p.instrumentId === resolvedInstrumentId
+                    })
+                    if (matchingPositions.length === 0) {
+                        throw new Error('No open positions found for symbol: ' + action.symbol)
+                    }
+                    if (matchingPositions.length > 1) {
+                        throw new Error(
+                            'Multiple open positions for ' +
+                                action.symbol +
+                                '. Cannot auto-correct safely.',
+                        )
+                    }
+                    targetPositionId = matchingPositions[0].positionId
+                    console.log('     Auto-corrected positionId to: ' + targetPositionId)
                 }
 
-                var closeResult = closeDemoPosition(/** @type {number} */ (action.positionId))
+                var closeResult = closeDemoPosition(/** @type {number} */ (targetPositionId))
                 console.log('     Position closed: ' + JSON.stringify(closeResult))
             } else {
                 console.log('     Unknown action type: ' + action.type)
@@ -162,7 +190,7 @@ function main() {
 
         // 6. Execute AI decision
         console.log('Step 6/6: Executing AI decision...')
-        executeDecision(aiDecision, positions)
+        executeDecision(aiDecision, positions, instrumentMap)
 
         console.log('=== Execution Complete ===')
     } catch (error) {
