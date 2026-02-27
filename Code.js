@@ -134,10 +134,30 @@ function fetchCandlesMap(instrumentMap) {
 function getBotPortfolio(instrumentMap) {
     var portfolio = getPortfolio()
     var credit = portfolio.clientPortfolio.credit
-    var positions = portfolio.clientPortfolio.positions || []
-    if (positions.length > 0) {
-        console.log('  Debug - Raw Position 0: ' + JSON.stringify(positions[0]))
+    var rawPositions = portfolio.clientPortfolio.positions || []
+    if (rawPositions.length > 0) {
+        console.log('  Debug - Raw Position 0: ' + JSON.stringify(rawPositions[0]))
     }
+
+    // Normalize raw eToro positions to consistent camelCase structure.
+    // The eToro API returns keys like positionID, instrumentID, and nests
+    // PnL under unrealizedPnL.pnL — we flatten it all here so the rest
+    // of the app can rely on a single, predictable shape.
+    var positions = rawPositions.map(function (p) {
+        return {
+            positionId: p.positionId || p.positionID || 0,
+            instrumentId: p.instrumentId || p.instrumentID || 0,
+            isBuy: p.isBuy,
+            openRate: p.openRate,
+            amount: p.amount,
+            units: p.units,
+            leverage: p.leverage,
+            pnL: p.pnL != null ? p.pnL : (p.unrealizedPnL && p.unrealizedPnL.pnL) || 0,
+            stopLossRate: p.stopLossRate,
+            takeProfitRate: p.takeProfitRate,
+        }
+    })
+
     var pendingOrders = portfolio.clientPortfolio.ordersForOpen || []
     var pendingAmount = pendingOrders.reduce(function (sum, o) {
         return sum + (o.amount || 0)
@@ -145,8 +165,7 @@ function getBotPortfolio(instrumentMap) {
     var availableCash = credit - pendingAmount
 
     var botPositions = positions.filter(function (p) {
-        var posInstrumentId = getPositionInstrumentId(p)
-        return posInstrumentId != null && Object.values(instrumentMap).includes(posInstrumentId)
+        return Object.values(instrumentMap).includes(p.instrumentId)
     })
     /** @type {EtoroPortfolioResponse} */
     var botPortfolio = {
@@ -208,7 +227,7 @@ function executeDecision(decision, botPositions, instrumentMap) {
                 if (
                     !targetPositionId ||
                     !botPositions.some(function (p) {
-                        return getPositionId(p) === targetPositionId
+                        return p.positionId === targetPositionId
                     })
                 ) {
                     console.warn(
@@ -222,7 +241,7 @@ function executeDecision(decision, botPositions, instrumentMap) {
                         throw new Error('No open positions found for symbol: ' + action.symbol)
                     }
                     var matchingPositions = botPositions.filter(function (p) {
-                        return getPositionInstrumentId(p) === resolvedInstrumentId
+                        return p.instrumentId === resolvedInstrumentId
                     })
                     if (matchingPositions.length === 0) {
                         throw new Error('No open positions found for symbol: ' + action.symbol)
@@ -234,7 +253,7 @@ function executeDecision(decision, botPositions, instrumentMap) {
                                 '. Cannot auto-correct safely.',
                         )
                     }
-                    targetPositionId = getPositionId(matchingPositions[0])
+                    targetPositionId = matchingPositions[0].positionId
                     console.log('     Auto-corrected positionId to: ' + targetPositionId)
                 }
 

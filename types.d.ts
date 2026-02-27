@@ -64,21 +64,31 @@ interface EtoroCandleResponse {
 
 // ── eToro Portfolio ────────────────────────────────────────────────────────
 
+/**
+ * Raw position shape returned by the eToro API.
+ * Field names use inconsistent casing (positionID, instrumentID)
+ * and PnL is nested under unrealizedPnL.pnL.
+ * Normalized to EtoroPosition in getBotPortfolio().
+ */
+interface RawEtoroPosition {
+    positionId?: number
+    positionID?: number
+    instrumentId?: number
+    instrumentID?: number
+    isBuy: boolean
+    openRate: number
+    amount: number
+    units: number
+    leverage: number
+    pnL?: number
+    unrealizedPnL?: { pnL: number }
+    stopLossRate: number
+    takeProfitRate: number
+}
+
 interface EtoroPosition {
     positionId: number
-    /** @deprecated eToro API may return alternate casing */
-    positionID?: number
-    /** @deprecated eToro API may return alternate casing */
-    PositionID?: number
-    /** @deprecated eToro API may return alternate casing */
-    PositionId?: number
     instrumentId: number
-    /** @deprecated eToro API may return alternate casing */
-    InstrumentID?: number
-    /** @deprecated eToro API may return alternate casing */
-    InstrumentId?: number
-    /** @deprecated eToro API may return alternate casing */
-    instrumentID?: number
     isBuy: boolean
     openRate: number
     amount: number
@@ -99,8 +109,18 @@ interface EtoroClientPortfolio {
     ordersForOpen?: EtoroPendingOrder[]
 }
 
+interface RawEtoroClientPortfolio {
+    credit: number
+    positions?: RawEtoroPosition[]
+    ordersForOpen?: EtoroPendingOrder[]
+}
+
 interface EtoroPortfolioResponse {
     clientPortfolio: EtoroClientPortfolio
+}
+
+interface RawEtoroPortfolioResponse {
+    clientPortfolio: RawEtoroClientPortfolio
 }
 
 // ── eToro Order Results ────────────────────────────────────────────────────

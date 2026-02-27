@@ -47,7 +47,7 @@ export default [
                 'warn',
                 {
                     varsIgnorePattern:
-                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|ACCOUNT_MODE|getScriptProperty|getEtoroHeaders|etoroFetch|isMarketOpen|getPositionInstrumentId|getPositionId)$',
+                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|ACCOUNT_MODE|getScriptProperty|getEtoroHeaders|etoroFetch|isMarketOpen)$',
                 },
             ],
         },
@@ -78,8 +78,6 @@ export default [
             globals: {
                 getScriptProperty: 'readonly',
                 GEMINI_BASE_URL: 'readonly',
-                getPositionInstrumentId: 'readonly',
-                getPositionId: 'readonly',
             },
         },
         rules: {
@@ -102,8 +100,6 @@ export default [
                 getHistoricalCandles: 'readonly',
                 ACCOUNT_MODE: 'readonly',
                 getPortfolio: 'readonly',
-                getPositionInstrumentId: 'readonly',
-                getPositionId: 'readonly',
                 openPosition: 'readonly',
                 closePosition: 'readonly',
                 searchInstrument: 'readonly',

@@ -74,7 +74,7 @@ function getHistoricalCandles(instrumentId, interval, count) {
 /**
  * Retrieves the account portfolio: credit, positions, orders, and P&L.
  * Uses ACCOUNT_MODE to target demo or real endpoint.
- * @returns {EtoroPortfolioResponse}
+ * @returns {RawEtoroPortfolioResponse}
  */
 function getPortfolio() {
     var modeSegment = ACCOUNT_MODE === 'DEMO' ? 'demo/' : ''
