@@ -62,7 +62,11 @@ function main() {
 
         // 6. Execute AI decision
         console.log('Step 6/6: Executing AI decision...')
-        executeDecision(aiDecision, portfolioData.positions, instrumentMap)
+        executeDecision(
+            aiDecision,
+            portfolioData.botPortfolio.clientPortfolio.positions ?? [],
+            instrumentMap,
+        )
 
         console.log('=== Execution Complete ===')
     } catch (error) {
@@ -125,7 +129,7 @@ function fetchCandlesMap(instrumentMap) {
  * a filtered "bot portfolio" containing only WATCHLIST positions.
  * Available cash is based on the real account credit (not filtered).
  * @param {InstrumentMap} instrumentMap
- * @returns {{ botPortfolio: EtoroPortfolioResponse, positions: EtoroPosition[], availableCash: number }}
+ * @returns {{ botPortfolio: EtoroPortfolioResponse, availableCash: number }}
  */
 function getBotPortfolio(instrumentMap) {
     var portfolio = getPortfolio()
@@ -155,16 +159,16 @@ function getBotPortfolio(instrumentMap) {
     console.log('  Total open positions (Account): ' + positions.length)
     console.log('  Open positions managed by Bot: ' + botPositions.length)
 
-    return { botPortfolio: botPortfolio, positions: positions, availableCash: availableCash }
+    return { botPortfolio, availableCash }
 }
 
 /**
  * Executes the actions returned by Gemini.
  * @param {GeminiDecision} decision - Gemini's parsed JSON response
- * @param {EtoroPosition[]} currentPositions - Currently open positions from the portfolio
+ * @param {EtoroPosition[]} botPositions - Filtered list of positions managed by the bot
  * @param {InstrumentMap} instrumentMap - Maps ticker symbols to eToro instrument IDs
  */
-function executeDecision(decision, currentPositions, instrumentMap) {
+function executeDecision(decision, botPositions, instrumentMap) {
     if (!decision || !decision.actions || decision.actions.length === 0) {
         console.log('  No actions recommended. Holding current positions.')
         if (decision && decision.analysis) {
@@ -199,7 +203,7 @@ function executeDecision(decision, currentPositions, instrumentMap) {
 
                 if (
                     !targetPositionId ||
-                    !currentPositions.some(function (p) {
+                    !botPositions.some(function (p) {
                         return p.positionId === targetPositionId
                     })
                 ) {
@@ -213,7 +217,7 @@ function executeDecision(decision, currentPositions, instrumentMap) {
                     if (!resolvedInstrumentId) {
                         throw new Error('No open positions found for symbol: ' + action.symbol)
                     }
-                    var matchingPositions = currentPositions.filter(function (p) {
+                    var matchingPositions = botPositions.filter(function (p) {
                         return p.instrumentId === resolvedInstrumentId
                     })
                     if (matchingPositions.length === 0) {
