@@ -11,7 +11,9 @@
  * @returns {EtoroSearchResult} Search results with items array
  */
 function searchInstrument(symbol) {
-    return etoroFetch('/api/v1/market-data/search?internalSymbolFull=' + encodeURIComponent(symbol))
+    var data = etoroFetch('/api/v1/market-data/search?internalSymbolFull=' + encodeURIComponent(symbol))
+    validateEtoroSearch(data)
+    return data
 }
 
 /**
@@ -46,9 +48,11 @@ function getInstrumentId(symbol) {
  * @returns {EtoroRatesResponse}
  */
 function getMarketRates(instrumentIds) {
-    return etoroFetch(
+    var data = etoroFetch(
         '/api/v1/market-data/instruments/rates?instrumentIds=' + instrumentIds.join(','),
     )
+    validateEtoroRates(data)
+    return data
 }
 
 /**
@@ -61,7 +65,7 @@ function getMarketRates(instrumentIds) {
 function getHistoricalCandles(instrumentId, interval, count) {
     interval = interval || 'OneDay'
     count = count || 20
-    return etoroFetch(
+    var data = etoroFetch(
         '/api/v1/market-data/instruments/' +
             instrumentId +
             '/history/candles/desc/' +
@@ -69,16 +73,35 @@ function getHistoricalCandles(instrumentId, interval, count) {
             '/' +
             count,
     )
+    validateEtoroCandles(data)
+    return data
 }
 
 /**
  * Retrieves the account portfolio: credit, positions, orders, and P&L.
  * Uses ACCOUNT_MODE to target demo or real endpoint.
- * @returns {RawEtoroPortfolioResponse}
+ * Validates the response schema and normalizes raw positions into strict
+ * camelCase EtoroPosition objects (Anti-Corruption Layer).
+ * @returns {EtoroPortfolioResponse}
  */
 function getPortfolio() {
     var modeSegment = ACCOUNT_MODE === 'DEMO' ? 'demo/' : ''
-    return etoroFetch('/api/v1/trading/info/' + modeSegment + 'pnl')
+    var data = etoroFetch('/api/v1/trading/info/' + modeSegment + 'pnl')
+    validateEtoroPortfolio(data)
+
+    var rawPositions = data.clientPortfolio.positions || []
+    validateEtoroPositions(rawPositions)
+
+    // Normalize raw positions to strict camelCase (Anti-Corruption Layer)
+    var positions = rawPositions.map(normalizePosition)
+
+    return {
+        clientPortfolio: {
+            credit: data.clientPortfolio.credit,
+            positions: positions,
+            ordersForOpen: data.clientPortfolio.ordersForOpen || [],
+        },
+    }
 }
 
 /**
@@ -107,11 +130,13 @@ function openPosition(instrumentId, amount, isBuy, leverage, stopLossRate, takeP
     if (takeProfitRate) {
         payload.TakeProfitRate = takeProfitRate
     }
-    return etoroFetch(
+    var data = etoroFetch(
         '/api/v1/trading/execution/' + modeSegment + 'market-open-orders/by-amount',
         'post',
         payload,
     )
+    validateEtoroOpenOrder(data)
+    return data
 }
 
 /**
@@ -123,9 +148,11 @@ function openPosition(instrumentId, amount, isBuy, leverage, stopLossRate, takeP
  */
 function closePosition(positionId, unitsToDeduct) {
     var modeSegment = ACCOUNT_MODE === 'DEMO' ? 'demo/' : ''
-    return etoroFetch(
+    var data = etoroFetch(
         '/api/v1/trading/execution/' + modeSegment + 'market-close-orders/positions/' + positionId,
         'post',
         { UnitsToDeduct: unitsToDeduct || null },
     )
+    validateEtoroCloseOrder(data)
+    return data
 }

@@ -109,18 +109,8 @@ interface EtoroClientPortfolio {
     ordersForOpen?: EtoroPendingOrder[]
 }
 
-interface RawEtoroClientPortfolio {
-    credit: number
-    positions?: RawEtoroPosition[]
-    ordersForOpen?: EtoroPendingOrder[]
-}
-
 interface EtoroPortfolioResponse {
     clientPortfolio: EtoroClientPortfolio
-}
-
-interface RawEtoroPortfolioResponse {
-    clientPortfolio: RawEtoroClientPortfolio
 }
 
 // ── eToro Order Results ────────────────────────────────────────────────────

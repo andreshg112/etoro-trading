@@ -120,6 +120,7 @@ npm test
 | File                      | Covers                                                                                                                        |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `tests/Config.test.js`    | Constants, `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`, `isMarketOpen`                                               |
+| `tests/Validator.test.js` | All validation functions (passing & failing schemas), `normalizePosition` (camelCase, eToro casing, nested PnL)               |
 | `tests/EtoroApi.test.js`  | All eToro API functions, endpoint URLs, payloads (incl. SL/TP), DEMO/REAL mode switching                                      |
 | `tests/GeminiApi.test.js` | `askGemini`, `buildGeminiPrompt` structure (10% rule, SL/TP format, hourly candles), rate/position/candle mapping             |
 | `tests/Code.test.js`      | `executeDecision` (all action types, SL/TP passthrough, error handling), `main()` integration (market hours, OneHour candles) |

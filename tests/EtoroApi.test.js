@@ -31,7 +31,7 @@ const {
     },
 })
 
-loadSourceFiles('Config.js', 'EtoroApi.js')
+loadSourceFiles('Config.js', 'Validator.js', 'EtoroApi.js')
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
@@ -122,7 +122,7 @@ function runTests() {
                 ACCOUNT_MODE: 'DEMO',
             })
             mockResponse(200, { totalItems: 0 })
-            assertThrows(() => getInstrumentId('MISSING'), 'Instrument not found')
+            assertThrows(() => getInstrumentId('MISSING'), 'CRITICAL: Schema validation failed')
         })
 
         it('Should cache resolved ID in Script Properties', () => {
@@ -172,7 +172,7 @@ function runTests() {
         it('Should return rates data', () => {
             resetMocks()
             mockResponse(200, {
-                rates: [{ instrumentID: 100, ask: 500.5, bid: 500.2 }],
+                rates: [{ instrumentID: 100, ask: 500.5, bid: 500.2, lastExecution: 500.3 }],
             })
             var result = getMarketRates([100])
             assertEqual(result.rates.length, 1)
@@ -239,7 +239,22 @@ function runTests() {
                 ACCOUNT_MODE: 'DEMO',
             })
             mockResponse(200, {
-                clientPortfolio: { credit: 50000, positions: [{ positionId: 1 }] },
+                clientPortfolio: {
+                    credit: 50000,
+                    positions: [
+                        {
+                            positionId: 1,
+                            instrumentId: 100,
+                            isBuy: true,
+                            openRate: 50,
+                            amount: 500,
+                            units: 10,
+                            leverage: 1,
+                            stopLossRate: 45,
+                            takeProfitRate: 55,
+                        },
+                    ],
+                },
             })
             var result = getPortfolio()
             assertEqual(result.clientPortfolio.credit, 50000)

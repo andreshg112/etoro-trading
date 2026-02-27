@@ -18,7 +18,7 @@ import {
 const { capturedRequests, logOutput, getLogText, resetMocks, registerMockResponse } =
     installGasMocks({ captureLog: true })
 
-loadSourceFiles('Config.js', 'EtoroApi.js', 'GeminiApi.js', 'Code.js')
+loadSourceFiles('Config.js', 'Validator.js', 'EtoroApi.js', 'GeminiApi.js', 'Code.js')
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
@@ -422,8 +422,30 @@ function runTests() {
             clientPortfolio: {
                 credit: 10000,
                 positions: [
-                    { positionId: 1, instrumentId: 1234, netProfit: 50 },
-                    { positionId: 2, instrumentId: 9999, netProfit: -20 },
+                    {
+                        positionId: 1,
+                        instrumentId: 1234,
+                        isBuy: true,
+                        openRate: 498,
+                        amount: 500,
+                        units: 1,
+                        leverage: 1,
+                        pnL: 50,
+                        stopLossRate: 480,
+                        takeProfitRate: 520,
+                    },
+                    {
+                        positionId: 2,
+                        instrumentId: 9999,
+                        isBuy: true,
+                        openRate: 100,
+                        amount: 200,
+                        units: 2,
+                        leverage: 1,
+                        pnL: -20,
+                        stopLossRate: 90,
+                        takeProfitRate: 110,
+                    },
                 ],
                 ordersForOpen: [],
             },

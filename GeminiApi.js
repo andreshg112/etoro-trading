@@ -38,7 +38,9 @@ function askGemini(prompt) {
 
     var data = JSON.parse(body)
     var text = data.candidates[0].content.parts[0].text
-    return JSON.parse(text)
+    var decision = JSON.parse(text)
+    validateGeminiDecision(decision)
+    return decision
 }
 
 /**

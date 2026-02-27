@@ -17,7 +17,7 @@ import {
 
 const { capturedRequests, resetMocks, setMockResponse } = installGasMocks()
 
-loadSourceFiles('Config.js', 'GeminiApi.js')
+loadSourceFiles('Config.js', 'Validator.js', 'GeminiApi.js')
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -101,7 +101,7 @@ function runTests() {
     describe('askGemini', () => {
         it('Should call Gemini API with correct URL', () => {
             resetMocks()
-            mockGeminiResponse({ status: 'ok' })
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Test prompt')
             assertContains(capturedRequests[0].url, 'generativelanguage.googleapis.com')
             assertContains(capturedRequests[0].url, 'gemini-2.5-flash')
@@ -110,21 +110,21 @@ function runTests() {
 
         it('Should use POST method', () => {
             resetMocks()
-            mockGeminiResponse({ status: 'ok' })
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Test')
             assertEqual(capturedRequests[0].options.method, 'post')
         })
 
         it('Should set content type to JSON', () => {
             resetMocks()
-            mockGeminiResponse({ status: 'ok' })
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Test')
             assertEqual(capturedRequests[0].options.contentType, 'application/json')
         })
 
         it('Should include prompt text in payload', () => {
             resetMocks()
-            mockGeminiResponse({ status: 'ok' })
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Analyze market trends')
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.contents[0].parts[0].text, 'Analyze market trends')
@@ -132,7 +132,7 @@ function runTests() {
 
         it('Should request JSON response format', () => {
             resetMocks()
-            mockGeminiResponse({ status: 'ok' })
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Test')
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.generationConfig.responseMimeType, 'application/json')
@@ -140,7 +140,7 @@ function runTests() {
 
         it('Should set temperature to 0.2', () => {
             resetMocks()
-            mockGeminiResponse({ status: 'ok' })
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Test')
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.generationConfig.temperature, 0.2)
@@ -162,7 +162,7 @@ function runTests() {
 
         it('Should set muteHttpExceptions to true', () => {
             resetMocks()
-            mockGeminiResponse({ status: 'ok' })
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Test')
             assertEqual(capturedRequests[0].options.muteHttpExceptions, true)
         })

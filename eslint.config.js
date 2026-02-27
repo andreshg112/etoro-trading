@@ -53,12 +53,33 @@ export default [
         },
     },
     {
+        // Validator.js exports validation and normalization functions
+        files: ['Validator.js'],
+        rules: {
+            'no-unused-vars': [
+                'warn',
+                {
+                    varsIgnorePattern:
+                        '^(validateEtoroSearch|validateEtoroRates|validateEtoroCandles|validateEtoroPortfolio|validateEtoroPositions|validateEtoroOpenOrder|validateEtoroCloseOrder|validateGeminiDecision|normalizePosition)$',
+                },
+            ],
+        },
+    },
+    {
         // EtoroApi.js exports eToro API functions used by Code.js
         files: ['EtoroApi.js'],
         languageOptions: {
             globals: {
                 etoroFetch: 'readonly',
                 ACCOUNT_MODE: 'readonly',
+                validateEtoroSearch: 'readonly',
+                validateEtoroRates: 'readonly',
+                validateEtoroCandles: 'readonly',
+                validateEtoroPortfolio: 'readonly',
+                validateEtoroPositions: 'readonly',
+                validateEtoroOpenOrder: 'readonly',
+                validateEtoroCloseOrder: 'readonly',
+                normalizePosition: 'readonly',
             },
         },
         rules: {
@@ -78,6 +99,7 @@ export default [
             globals: {
                 getScriptProperty: 'readonly',
                 GEMINI_BASE_URL: 'readonly',
+                validateGeminiDecision: 'readonly',
             },
         },
         rules: {

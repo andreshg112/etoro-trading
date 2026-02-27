@@ -73,3 +73,15 @@ declare function getBotPortfolio(instrumentMap: InstrumentMap): {
 declare function testEtoroConnection(): void
 declare function testGetPortfolio(): void
 declare function testGeminiConnection(): void
+
+// ── Validator.js globals ───────────────────────────────────────────────────
+
+declare function validateEtoroSearch(data: any): void
+declare function validateEtoroRates(data: any): void
+declare function validateEtoroCandles(data: any): void
+declare function validateEtoroPortfolio(data: any): void
+declare function validateEtoroPositions(rawPositions: any[]): void
+declare function validateEtoroOpenOrder(data: any): void
+declare function validateEtoroCloseOrder(data: any): void
+declare function validateGeminiDecision(decision: any): void
+declare function normalizePosition(p: RawEtoroPosition): EtoroPosition
