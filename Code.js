@@ -135,6 +135,9 @@ function getBotPortfolio(instrumentMap) {
     var portfolio = getPortfolio()
     var credit = portfolio.clientPortfolio.credit
     var positions = portfolio.clientPortfolio.positions || []
+    if (positions.length > 0) {
+        console.log('  Debug - Raw Position 0: ' + JSON.stringify(positions[0]))
+    }
     var pendingOrders = portfolio.clientPortfolio.ordersForOpen || []
     var pendingAmount = pendingOrders.reduce(function (sum, o) {
         return sum + (o.amount || 0)
@@ -142,7 +145,8 @@ function getBotPortfolio(instrumentMap) {
     var availableCash = credit - pendingAmount
 
     var botPositions = positions.filter(function (p) {
-        return Object.values(instrumentMap).includes(p.instrumentId)
+        var posInstrumentId = p.instrumentId || p.InstrumentID || p.InstrumentId || p.instrumentID
+        return posInstrumentId != null && Object.values(instrumentMap).includes(posInstrumentId)
     })
     /** @type {EtoroPortfolioResponse} */
     var botPortfolio = {
