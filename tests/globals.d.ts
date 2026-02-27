@@ -58,12 +58,19 @@ declare function buildGeminiPrompt(
 
 // ── Code.js globals ────────────────────────────────────────────────────────
 
+declare function main(): void
 declare function executeDecision(
     decision: GeminiDecision,
     currentPositions: EtoroPosition[],
     instrumentMap: InstrumentMap,
 ): void
-declare function main(): void
+declare function buildInstrumentMap(): InstrumentMap
+declare function fetchCandlesMap(instrumentMap: InstrumentMap): CandlesMap
+declare function getBotPortfolio(instrumentMap: InstrumentMap): {
+    botPortfolio: EtoroPortfolioResponse
+    positions: EtoroPosition[]
+    availableCash: number
+}
 declare function testEtoroConnection(): void
 declare function testGetPortfolio(): void
 declare function testGeminiConnection(): void
