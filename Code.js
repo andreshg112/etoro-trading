@@ -168,10 +168,24 @@ function main() {
         }, 0)
         var availableCash = credit - pendingAmount
 
+        // Filter positions to only those the bot manages (WATCHLIST instruments)
+        var botPositions = positions.filter(function (p) {
+            return Object.values(instrumentMap).includes(p.instrumentId)
+        })
+        /** @type {EtoroPortfolioResponse} */
+        var botPortfolio = {
+            clientPortfolio: {
+                credit: credit,
+                positions: botPositions,
+                ordersForOpen: pendingOrders,
+            },
+        }
+
         console.log('  Credit: $' + credit.toFixed(2))
         console.log('  Pending orders total: $' + pendingAmount.toFixed(2))
         console.log('  Available cash: $' + availableCash.toFixed(2))
-        console.log('  Open positions: ' + positions.length)
+        console.log('  Total open positions (Account): ' + positions.length)
+        console.log('  Open positions managed by Bot: ' + botPositions.length)
 
         // 5. Send data to Gemini for analysis
         console.log('Step 5/6: Sending market data to Gemini for analysis...')
@@ -179,7 +193,7 @@ function main() {
             instrumentMap,
             ratesData,
             candlesMap,
-            portfolio,
+            botPortfolio,
             availableCash,
         )
         var aiDecision = askGemini(prompt)

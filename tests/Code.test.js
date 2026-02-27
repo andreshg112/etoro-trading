@@ -417,11 +417,14 @@ function runTests() {
             ],
         })
 
-        // Mock portfolio
+        // Mock portfolio (includes bot-managed + non-bot positions)
         registerMockResponse('trading/info/demo/pnl', 200, {
             clientPortfolio: {
                 credit: 10000,
-                positions: [],
+                positions: [
+                    { positionId: 1, instrumentId: 1234, netProfit: 50 },
+                    { positionId: 2, instrumentId: 9999, netProfit: -20 },
+                ],
                 ordersForOpen: [],
             },
         })
@@ -474,6 +477,12 @@ function runTests() {
         it('Should fetch portfolio data', () => {
             var log = getLogText()
             assertContains(log, 'Credit: $')
+        })
+
+        it('Should log total account positions vs bot-managed positions', () => {
+            var log = getLogText()
+            assertContains(log, 'Total open positions (Account): 2')
+            assertContains(log, 'Open positions managed by Bot: 1')
         })
 
         it('Should request OneHour candles', () => {
