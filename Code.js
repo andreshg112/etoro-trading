@@ -49,17 +49,14 @@ function executeDecision(decision, currentPositions, instrumentMap) {
                 )
                 console.log('     BUY order placed: ' + JSON.stringify(buyResult))
             } else if (action.type === 'SELL_CLOSE') {
-                if (!action.positionId) {
-                    throw new Error('Missing positionId for SELL_CLOSE action')
-                }
-
                 var targetPositionId = action.positionId
 
-                var validPosition = currentPositions.find(function (p) {
-                    return p.positionId === targetPositionId
-                })
-
-                if (!validPosition) {
+                if (
+                    !targetPositionId ||
+                    !currentPositions.some(function (p) {
+                        return p.positionId === targetPositionId
+                    })
+                ) {
                     console.warn(
                         '     AI hallucinated positionId: ' +
                             targetPositionId +
