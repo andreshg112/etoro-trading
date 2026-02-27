@@ -145,7 +145,7 @@ function getBotPortfolio(instrumentMap) {
     var availableCash = credit - pendingAmount
 
     var botPositions = positions.filter(function (p) {
-        var posInstrumentId = p.instrumentId || p.InstrumentID || p.InstrumentId || p.instrumentID
+        var posInstrumentId = getPositionInstrumentId(p)
         return posInstrumentId != null && Object.values(instrumentMap).includes(posInstrumentId)
     })
     /** @type {EtoroPortfolioResponse} */
@@ -208,7 +208,7 @@ function executeDecision(decision, botPositions, instrumentMap) {
                 if (
                     !targetPositionId ||
                     !botPositions.some(function (p) {
-                        return p.positionId === targetPositionId
+                        return getPositionId(p) === targetPositionId
                     })
                 ) {
                     console.warn(
@@ -222,7 +222,7 @@ function executeDecision(decision, botPositions, instrumentMap) {
                         throw new Error('No open positions found for symbol: ' + action.symbol)
                     }
                     var matchingPositions = botPositions.filter(function (p) {
-                        return p.instrumentId === resolvedInstrumentId
+                        return getPositionInstrumentId(p) === resolvedInstrumentId
                     })
                     if (matchingPositions.length === 0) {
                         throw new Error('No open positions found for symbol: ' + action.symbol)
@@ -234,7 +234,7 @@ function executeDecision(decision, botPositions, instrumentMap) {
                                 '. Cannot auto-correct safely.',
                         )
                     }
-                    targetPositionId = matchingPositions[0].positionId
+                    targetPositionId = getPositionId(matchingPositions[0])
                     console.log('     Auto-corrected positionId to: ' + targetPositionId)
                 }
 

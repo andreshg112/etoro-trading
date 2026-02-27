@@ -21,6 +21,8 @@ declare function etoroFetch(
     method?: string,
     payload?: Record<string, unknown>,
 ): any
+declare function getPositionInstrumentId(position: EtoroPosition): number | undefined
+declare function getPositionId(position: EtoroPosition): number | undefined
 
 // ── EtoroApi.js globals ────────────────────────────────────────────────────
 

@@ -75,6 +75,31 @@ function isMarketOpen() {
 }
 
 /**
+ * Extracts the instrument ID from a raw eToro position object.
+ * Handles casing variations: instrumentId, InstrumentID, InstrumentId, instrumentID.
+ * @param {EtoroPosition} position
+ * @returns {number | undefined}
+ */
+function getPositionInstrumentId(position) {
+    return (
+        position.instrumentId ||
+        position.InstrumentID ||
+        position.InstrumentId ||
+        position.instrumentID
+    )
+}
+
+/**
+ * Extracts the position ID from a raw eToro position object.
+ * Handles casing variations: positionId, positionID, PositionID, PositionId.
+ * @param {EtoroPosition} position
+ * @returns {number | undefined}
+ */
+function getPositionId(position) {
+    return position.positionId || position.positionID || position.PositionID || position.PositionId
+}
+
+/**
  * Makes an authenticated request to the eToro Public API.
  * @param {string} endpoint - API path (e.g. '/api/v1/market-data/search')
  * @param {string} [method='get'] - HTTP method

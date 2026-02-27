@@ -84,7 +84,8 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
 
     // Summarize open positions
     var positionsSummary = (portfolio.clientPortfolio.positions || []).map(function (p) {
-        var posInstrumentId = p.instrumentId || p.InstrumentID || p.InstrumentId || p.instrumentID
+        var posInstrumentId = getPositionInstrumentId(p)
+        var posId = getPositionId(p)
         var posSymbol = 'Unknown(ID:' + posInstrumentId + ')'
         for (var s in instrumentMap) {
             if (instrumentMap[s] === posInstrumentId) {
@@ -93,7 +94,7 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
             }
         }
         return {
-            positionId: p.positionId,
+            positionId: posId,
             symbol: posSymbol,
             instrumentId: posInstrumentId,
             isBuy: p.isBuy,

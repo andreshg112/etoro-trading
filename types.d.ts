@@ -66,6 +66,12 @@ interface EtoroCandleResponse {
 
 interface EtoroPosition {
     positionId: number
+    /** @deprecated eToro API may return alternate casing */
+    positionID?: number
+    /** @deprecated eToro API may return alternate casing */
+    PositionID?: number
+    /** @deprecated eToro API may return alternate casing */
+    PositionId?: number
     instrumentId: number
     /** @deprecated eToro API may return alternate casing */
     InstrumentID?: number
