@@ -186,14 +186,15 @@ function validateEtoroPositions(rawPositions) {
 
 /**
  * Validates the response from eToro's open-position endpoint.
+ * Checks for nested `data.orderForOpen.orderID` per actual eToro response schema.
  * @param {any} data - Parsed JSON from /api/v1/trading/execution/.../market-open-orders/by-amount
  * @returns {void}
  */
 function validateEtoroOpenOrder(data) {
-    if (!data || typeof data.orderId !== 'number') {
+    if (!data || !data.orderForOpen || typeof data.orderForOpen.orderID !== 'number') {
         throw new Error(
             'CRITICAL: Schema validation failed — ' +
-                'eToro Open Order response missing numeric "orderId". Got: ' +
+                'eToro Open Order response missing nested "orderForOpen.orderID". Got: ' +
                 JSON.stringify(data),
         )
     }
@@ -201,14 +202,15 @@ function validateEtoroOpenOrder(data) {
 
 /**
  * Validates the response from eToro's close-position endpoint.
+ * Checks for nested `data.orderForClose.orderID` per eToro API docs.
  * @param {any} data - Parsed JSON from /api/v1/trading/execution/.../market-close-orders/positions/{id}
  * @returns {void}
  */
 function validateEtoroCloseOrder(data) {
-    if (!data || typeof data !== 'object') {
+    if (!data || !data.orderForClose || typeof data.orderForClose.orderID !== 'number') {
         throw new Error(
             'CRITICAL: Schema validation failed — ' +
-                'eToro Close Order response is not an object. Got: ' +
+                'eToro Close Order response missing nested "orderForClose.orderID". Got: ' +
                 JSON.stringify(data),
         )
     }
@@ -217,7 +219,7 @@ function validateEtoroCloseOrder(data) {
 /**
  * Validates a Gemini AI decision response.
  * Ensures `actions` is an array and each action has the required fields
- * for its type (BUY requires instrumentId/amount/SL/TP, SELL_CLOSE requires positionId).
+ * for its type (BUY requires instrumentId/amount/SL/TP, SELL_CLOSE requires symbol only).
  * @param {any} decision - Parsed JSON from Gemini's response
  * @returns {void}
  */
@@ -296,17 +298,8 @@ function validateGeminiDecision(decision) {
             }
         }
 
-        if (action.type === 'SELL_CLOSE') {
-            if (typeof action.positionId !== 'number') {
-                throw new Error(
-                    'CRITICAL: Schema validation failed — ' +
-                        'Gemini SELL_CLOSE action[' +
-                        index +
-                        '] missing numeric "positionId". Got: ' +
-                        JSON.stringify(action),
-                )
-            }
-        }
+        // SELL_CLOSE only requires symbol (already validated above) — no positionId needed.
+        // The bot resolves all matching positions by symbol at execution time.
     })
 }
 

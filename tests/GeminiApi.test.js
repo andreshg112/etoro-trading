@@ -244,9 +244,9 @@ function runTests() {
             assertContains(prompt, 'CRITICAL: For BUY actions, you MUST use the instrumentId')
         })
 
-        it('Should enforce positionId for SELL_CLOSE and forbid instrumentId', () => {
-            assertContains(prompt, 'CRITICAL: For SELL_CLOSE actions, you MUST use the positionId')
-            assertContains(prompt, 'NEVER use the instrumentId for a SELL_CLOSE')
+        it('Should enforce symbol-based SELL_CLOSE with close-all behavior', () => {
+            assertContains(prompt, 'CRITICAL: For SELL_CLOSE actions, you MUST use the symbol')
+            assertContains(prompt, 'close ALL open positions for that symbol')
         })
 
         it('Should show separate BUY and SELL_CLOSE examples in response format', () => {
@@ -288,12 +288,16 @@ function runTests() {
             assertContains(prompt, '"symbol": "VOO"')
         })
 
-        it('Should include positionId', () => {
-            assertContains(prompt, '"positionId": 9001')
+        it('Should include aggregated positionCount', () => {
+            assertContains(prompt, '"positionCount": 1')
         })
 
-        it('Should include P&L', () => {
-            assertContains(prompt, '"pnL": 50.75')
+        it('Should include aggregated totalPnL', () => {
+            assertContains(prompt, '"totalPnL": 50.75')
+        })
+
+        it('Should include aggregated totalAmount', () => {
+            assertContains(prompt, '"totalAmount": 1000')
         })
     })
 

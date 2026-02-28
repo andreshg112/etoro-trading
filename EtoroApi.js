@@ -11,7 +11,9 @@
  * @returns {EtoroSearchResult} Search results with items array
  */
 function searchInstrument(symbol) {
-    var data = etoroFetch('/api/v1/market-data/search?internalSymbolFull=' + encodeURIComponent(symbol))
+    var data = etoroFetch(
+        '/api/v1/market-data/search?internalSymbolFull=' + encodeURIComponent(symbol),
+    )
     validateEtoroSearch(data)
     return data
 }
@@ -142,16 +144,23 @@ function openPosition(instrumentId, amount, isBuy, leverage, stopLossRate, takeP
 /**
  * Closes a position (full or partial).
  * Uses ACCOUNT_MODE to target demo or real endpoint.
+ * The eToro API requires InstrumentId in the body even for full closures.
  * @param {number} positionId
- * @param {number|null} [unitsToDeduct=null] - null for full close
+ * @param {number} instrumentId - Required by eToro's close endpoint
+ * @param {number} [unitsToDeduct] - Omit for full close
  * @returns {EtoroCloseResult}
  */
-function closePosition(positionId, unitsToDeduct) {
+function closePosition(positionId, instrumentId, unitsToDeduct) {
     var modeSegment = ACCOUNT_MODE === 'DEMO' ? 'demo/' : ''
+    /** @type {Record<string, unknown>} */
+    var payload = { InstrumentId: instrumentId }
+    if (unitsToDeduct) {
+        payload.UnitsToDeduct = unitsToDeduct
+    }
     var data = etoroFetch(
         '/api/v1/trading/execution/' + modeSegment + 'market-close-orders/positions/' + positionId,
         'post',
-        { UnitsToDeduct: unitsToDeduct || null },
+        payload,
     )
     validateEtoroCloseOrder(data)
     return data

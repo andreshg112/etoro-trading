@@ -295,7 +295,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 100, true, 1)
             assertContains(
                 capturedRequests[0].url,
@@ -312,7 +312,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 500, true, 2)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.InstrumentId, 1234)
@@ -329,7 +329,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 100)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.IsBuy, true)
@@ -343,7 +343,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 100)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.Leverage, 1)
@@ -357,7 +357,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 100, false, 1)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.IsBuy, false)
@@ -371,7 +371,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 100, true, 1)
             assertContains(capturedRequests[0].url, '/demo/')
         })
@@ -384,7 +384,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 500, true, 1, 480, 0)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.StopLossRate, 480)
@@ -398,7 +398,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 500, true, 1, 0, 520)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.TakeProfitRate, 520)
@@ -412,7 +412,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 500, true, 1, 480, 520)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.StopLossRate, 480)
@@ -427,7 +427,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 500, true, 1, 0, 0)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.StopLossRate, undefined)
@@ -441,7 +441,7 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { orderId: 999 })
+            mockResponse(200, { orderForOpen: { orderID: 999 } })
             openPosition(1234, 500, true, 1)
             var payload = JSON.parse(capturedRequests[0].options.payload)
             assertEqual(payload.TakeProfitRate, undefined)
@@ -459,7 +459,7 @@ function runTests() {
             })
             global.ACCOUNT_MODE = 'REAL'
             try {
-                mockResponse(200, { orderId: 999 })
+                mockResponse(200, { orderForOpen: { orderID: 999 } })
                 openPosition(1234, 100, true, 1)
                 assertContains(
                     capturedRequests[0].url,
@@ -484,8 +484,8 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { closed: true })
-            closePosition(98765)
+            mockResponse(200, { orderForClose: { orderID: 555 } })
+            closePosition(98765, 1234)
             assertContains(
                 capturedRequests[0].url,
                 '/api/v1/trading/execution/demo/market-close-orders/positions/98765',
@@ -493,7 +493,7 @@ function runTests() {
             assertEqual(capturedRequests[0].options.method, 'post')
         })
 
-        it('Should send null UnitsToDeduct for full close by default', () => {
+        it('Should always include InstrumentId in payload', () => {
             resetMocks()
             setProperties({
                 ETORO_API_KEY: 'test-api-key',
@@ -501,10 +501,39 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { closed: true })
-            closePosition(98765)
+            mockResponse(200, { orderForClose: { orderID: 555 } })
+            closePosition(98765, 1234)
             var payload = JSON.parse(capturedRequests[0].options.payload)
-            assertEqual(payload.UnitsToDeduct, null)
+            assertEqual(payload.InstrumentId, 1234)
+        })
+
+        it('Should omit UnitsToDeduct for full close', () => {
+            resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
+            mockResponse(200, { orderForClose: { orderID: 555 } })
+            closePosition(98765, 1234)
+            var payload = JSON.parse(capturedRequests[0].options.payload)
+            assertEqual(payload.UnitsToDeduct, undefined)
+        })
+
+        it('Should include UnitsToDeduct for partial close', () => {
+            resetMocks()
+            setProperties({
+                ETORO_API_KEY: 'test-api-key',
+                ETORO_USER_KEY: 'test-user-key',
+                WATCHLIST: 'TSLA',
+                ACCOUNT_MODE: 'DEMO',
+            })
+            mockResponse(200, { orderForClose: { orderID: 555 } })
+            closePosition(98765, 1234, 5)
+            var payload = JSON.parse(capturedRequests[0].options.payload)
+            assertEqual(payload.InstrumentId, 1234)
+            assertEqual(payload.UnitsToDeduct, 5)
         })
 
         it('Should use demo endpoint (not real)', () => {
@@ -515,8 +544,8 @@ function runTests() {
                 WATCHLIST: 'TSLA',
                 ACCOUNT_MODE: 'DEMO',
             })
-            mockResponse(200, { closed: true })
-            closePosition(98765)
+            mockResponse(200, { orderForClose: { orderID: 555 } })
+            closePosition(98765, 1234)
             assertContains(capturedRequests[0].url, '/demo/')
         })
     })
@@ -532,8 +561,8 @@ function runTests() {
             })
             global.ACCOUNT_MODE = 'REAL'
             try {
-                mockResponse(200, { closed: true })
-                closePosition(98765)
+                mockResponse(200, { orderForClose: { orderID: 555 } })
+                closePosition(98765, 1234)
                 assertContains(
                     capturedRequests[0].url,
                     '/api/v1/trading/execution/market-close-orders/positions/98765',

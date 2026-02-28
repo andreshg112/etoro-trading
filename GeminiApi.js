@@ -84,8 +84,10 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
         }
     }
 
-    // Summarize open positions
-    var positionsSummary = (portfolio.clientPortfolio.positions || []).map(function (p) {
+    // Aggregate open positions by symbol
+    /** @type {Object<string, {symbol: string, instrumentId: number, positionCount: number, totalAmount: number, totalUnits: number, totalPnL: number, avgOpenRate: number, isBuy: boolean}>} */
+    var aggregated = {}
+    ;(portfolio.clientPortfolio.positions || []).forEach(function (p) {
         var posSymbol = 'Unknown(ID:' + p.instrumentId + ')'
         for (var s in instrumentMap) {
             if (instrumentMap[s] === p.instrumentId) {
@@ -93,20 +95,28 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
                 break
             }
         }
-        return {
-            positionId: p.positionId,
-            symbol: posSymbol,
-            instrumentId: p.instrumentId,
-            isBuy: p.isBuy,
-            openRate: p.openRate,
-            amount: p.amount,
-            units: p.units,
-            leverage: p.leverage,
-            pnL: p.pnL,
-            stopLossRate: p.stopLossRate,
-            takeProfitRate: p.takeProfitRate,
+        if (!aggregated[posSymbol]) {
+            aggregated[posSymbol] = {
+                symbol: posSymbol,
+                instrumentId: p.instrumentId,
+                positionCount: 0,
+                totalAmount: 0,
+                totalUnits: 0,
+                totalPnL: 0,
+                avgOpenRate: 0,
+                isBuy: p.isBuy,
+            }
         }
+        var agg = aggregated[posSymbol]
+        agg.positionCount += 1
+        agg.totalAmount += p.amount
+        agg.totalUnits += p.units
+        agg.totalPnL += p.pnL
+        // Weighted average open rate
+        agg.avgOpenRate =
+            (agg.avgOpenRate * (agg.positionCount - 1) + p.openRate) / agg.positionCount
     })
+    var positionsSummary = Object.values(aggregated)
 
     return (
         'You are an autonomous day-trading AI bot operating on a DEMO/VIRTUAL eToro account. ' +
@@ -154,18 +164,17 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
         '      "takeProfitRate": <price to take profit>,\n' +
         '      "reason": "Brief reason"\n' +
         '    },\n' +
-        '    // SELL_CLOSE example — uses positionId from CURRENT OPEN POSITIONS:\n' +
+        '    // SELL_CLOSE example — uses symbol from CURRENT OPEN POSITIONS:\n' +
         '    {\n' +
         '      "type": "SELL_CLOSE",\n' +
         '      "symbol": "TICKER",\n' +
-        '      "positionId": <number from CURRENT OPEN POSITIONS>,\n' +
         '      "reason": "Brief reason"\n' +
         '    }\n' +
         '  ]\n' +
         '}\n\n' +
         'Rules:\n' +
         '- CRITICAL: For BUY actions, you MUST use the instrumentId from the INSTRUMENT ID MAP.\n' +
-        '- CRITICAL: For SELL_CLOSE actions, you MUST use the positionId from CURRENT OPEN POSITIONS. NEVER use the instrumentId for a SELL_CLOSE action.\n' +
+        '- CRITICAL: For SELL_CLOSE actions, you MUST use the symbol from CURRENT OPEN POSITIONS. It will close ALL open positions for that symbol.\n' +
         '- For BUY, specify USD amount (must not exceed available cash collectively).\n' +
         '- For BUY, always include stopLossRate and takeProfitRate.\n' +
         '- NEVER invest more than 10% of available cash in a single BUY trade.\n' +

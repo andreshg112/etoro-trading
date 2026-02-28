@@ -57,6 +57,7 @@ function main() {
             portfolioData.botPortfolio,
             portfolioData.availableCash,
         )
+        console.log('  --- Gemini Prompt ---\n' + prompt)
         var aiDecision = askGemini(prompt)
         console.log('  Gemini responded with ' + (aiDecision.actions || []).length + ' action(s).')
 
@@ -164,6 +165,68 @@ function getBotPortfolio(instrumentMap) {
 }
 
 /**
+ * Executes a single BUY action from Gemini.
+ * @param {GeminiAction} action
+ */
+function executeBuy(action) {
+    if (!action.instrumentId) {
+        throw new Error('Missing instrumentId for BUY action')
+    }
+    var result = openPosition(
+        /** @type {number} */ (action.instrumentId),
+        /** @type {number} */ (action.amount),
+        true,
+        1,
+        action.stopLossRate,
+        action.takeProfitRate,
+    )
+    console.log('     BUY order placed: ' + JSON.stringify(result))
+}
+
+/**
+ * Executes a single SELL_CLOSE action from Gemini.
+ * Resolves the symbol to an instrumentId, finds all matching positions,
+ * and closes every one of them.
+ * @param {GeminiAction} action
+ * @param {EtoroPosition[]} botPositions
+ * @param {InstrumentMap} instrumentMap
+ */
+function executeSellClose(action, botPositions, instrumentMap) {
+    var resolvedInstrumentId = instrumentMap[action.symbol]
+    if (!resolvedInstrumentId) {
+        throw new Error('Symbol not found in instrumentMap: ' + action.symbol)
+    }
+    var matchingPositions = botPositions.filter(function (p) {
+        return p.instrumentId === resolvedInstrumentId
+    })
+    if (matchingPositions.length === 0) {
+        console.log('     No open positions found to close for symbol: ' + action.symbol)
+        return
+    }
+    console.log(
+        '     Found ' + matchingPositions.length + ' position(s) to close for ' + action.symbol,
+    )
+    matchingPositions.forEach(function (pos) {
+        try {
+            var closeResult = closePosition(
+                /** @type {number} */ (pos.positionId),
+                /** @type {number} */ (pos.instrumentId),
+            )
+            console.log(
+                '     Position ' + pos.positionId + ' closed: ' + JSON.stringify(closeResult),
+            )
+        } catch (err) {
+            console.error(
+                '     Failed to close position ' +
+                    pos.positionId +
+                    ': ' +
+                    /** @type {Error} */ (err).message,
+            )
+        }
+    })
+}
+
+/**
  * Executes the actions returned by Gemini.
  * @param {GeminiDecision} decision - Gemini's parsed JSON response
  * @param {EtoroPosition[]} botPositions - Filtered list of positions managed by the bot
@@ -186,57 +249,9 @@ function executeDecision(decision, botPositions, instrumentMap) {
 
         try {
             if (action.type === 'BUY') {
-                if (!action.instrumentId) {
-                    throw new Error('Missing instrumentId for BUY action')
-                }
-
-                var buyResult = openPosition(
-                    /** @type {number} */ (action.instrumentId),
-                    /** @type {number} */ (action.amount),
-                    true,
-                    1,
-                    action.stopLossRate,
-                    action.takeProfitRate,
-                )
-                console.log('     BUY order placed: ' + JSON.stringify(buyResult))
+                executeBuy(action)
             } else if (action.type === 'SELL_CLOSE') {
-                var targetPositionId = action.positionId
-
-                if (
-                    !targetPositionId ||
-                    !botPositions.some(function (p) {
-                        return p.positionId === targetPositionId
-                    })
-                ) {
-                    console.warn(
-                        '     AI hallucinated positionId: ' +
-                            targetPositionId +
-                            '. Attempting auto-correction using symbol: ' +
-                            action.symbol,
-                    )
-                    var resolvedInstrumentId = instrumentMap[action.symbol]
-                    if (!resolvedInstrumentId) {
-                        throw new Error('No open positions found for symbol: ' + action.symbol)
-                    }
-                    var matchingPositions = botPositions.filter(function (p) {
-                        return p.instrumentId === resolvedInstrumentId
-                    })
-                    if (matchingPositions.length === 0) {
-                        throw new Error('No open positions found for symbol: ' + action.symbol)
-                    }
-                    if (matchingPositions.length > 1) {
-                        throw new Error(
-                            'Multiple open positions for ' +
-                                action.symbol +
-                                '. Cannot auto-correct safely.',
-                        )
-                    }
-                    targetPositionId = matchingPositions[0].positionId
-                    console.log('     Auto-corrected positionId to: ' + targetPositionId)
-                }
-
-                var closeResult = closePosition(/** @type {number} */ (targetPositionId))
-                console.log('     Position closed: ' + JSON.stringify(closeResult))
+                executeSellClose(action, botPositions, instrumentMap)
             } else {
                 console.log('     Unknown action type: ' + action.type)
             }

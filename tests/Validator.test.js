@@ -368,8 +368,8 @@ function runTests() {
     // ── validateEtoroOpenOrder ─────────────────────────────────────────────
 
     describe('validateEtoroOpenOrder — passing schemas', () => {
-        it('Should accept valid open order response', () => {
-            validateEtoroOpenOrder({ orderId: 12345 })
+        it('Should accept valid open order response with nested orderForOpen', () => {
+            validateEtoroOpenOrder({ orderForOpen: { orderID: 12345 } })
         })
     })
 
@@ -378,14 +378,28 @@ function runTests() {
             assertThrows(() => validateEtoroOpenOrder(null), 'CRITICAL: Schema validation failed')
         })
 
-        it('Should throw when orderId is missing', () => {
-            assertThrows(() => validateEtoroOpenOrder({}), 'missing numeric "orderId"')
+        it('Should throw when orderForOpen is missing', () => {
+            assertThrows(() => validateEtoroOpenOrder({}), 'missing nested "orderForOpen.orderID"')
         })
 
-        it('Should throw when orderId is not a number', () => {
+        it('Should throw when orderForOpen.orderID is not a number', () => {
             assertThrows(
-                () => validateEtoroOpenOrder({ orderId: 'abc' }),
-                'missing numeric "orderId"',
+                () => validateEtoroOpenOrder({ orderForOpen: { orderID: 'abc' } }),
+                'missing nested "orderForOpen.orderID"',
+            )
+        })
+
+        it('Should throw when orderForOpen is not an object', () => {
+            assertThrows(
+                () => validateEtoroOpenOrder({ orderForOpen: 12345 }),
+                'missing nested "orderForOpen.orderID"',
+            )
+        })
+
+        it('Should throw when flat orderId is provided instead of nested', () => {
+            assertThrows(
+                () => validateEtoroOpenOrder({ orderId: 12345 }),
+                'missing nested "orderForOpen.orderID"',
             )
         })
     })
@@ -393,12 +407,8 @@ function runTests() {
     // ── validateEtoroCloseOrder ────────────────────────────────────────────
 
     describe('validateEtoroCloseOrder — passing schemas', () => {
-        it('Should accept valid close order response', () => {
-            validateEtoroCloseOrder({ positionId: 9001 })
-        })
-
-        it('Should accept any object response', () => {
-            validateEtoroCloseOrder({ closed: true })
+        it('Should accept valid close order response with nested orderForClose', () => {
+            validateEtoroCloseOrder({ orderForClose: { orderID: 9001 } })
         })
     })
 
@@ -407,12 +417,32 @@ function runTests() {
             assertThrows(() => validateEtoroCloseOrder(null), 'CRITICAL: Schema validation failed')
         })
 
+        it('Should throw when orderForClose is missing', () => {
+            assertThrows(
+                () => validateEtoroCloseOrder({}),
+                'missing nested "orderForClose.orderID"',
+            )
+        })
+
+        it('Should throw when orderForClose.orderID is not a number', () => {
+            assertThrows(
+                () => validateEtoroCloseOrder({ orderForClose: { orderID: 'abc' } }),
+                'missing nested "orderForClose.orderID"',
+            )
+        })
+
         it('Should throw when data is a string', () => {
-            assertThrows(() => validateEtoroCloseOrder('OK'), 'not an object')
+            assertThrows(
+                () => validateEtoroCloseOrder('OK'),
+                'missing nested "orderForClose.orderID"',
+            )
         })
 
         it('Should throw when data is a number', () => {
-            assertThrows(() => validateEtoroCloseOrder(42), 'not an object')
+            assertThrows(
+                () => validateEtoroCloseOrder(42),
+                'missing nested "orderForClose.orderID"',
+            )
         })
     })
 
@@ -440,14 +470,13 @@ function runTests() {
             })
         })
 
-        it('Should accept valid SELL_CLOSE action', () => {
+        it('Should accept valid SELL_CLOSE action (symbol only, no positionId)', () => {
             validateGeminiDecision({
                 analysis: 'Taking profit',
                 actions: [
                     {
                         type: 'SELL_CLOSE',
                         symbol: 'TSLA',
-                        positionId: 9001,
                         reason: 'Target reached',
                     },
                 ],
@@ -458,7 +487,7 @@ function runTests() {
             validateGeminiDecision({
                 analysis: 'Rebalancing',
                 actions: [
-                    { type: 'SELL_CLOSE', symbol: 'AAPL', positionId: 100, reason: 'Sell' },
+                    { type: 'SELL_CLOSE', symbol: 'AAPL', reason: 'Sell' },
                     {
                         type: 'BUY',
                         symbol: 'NVDA',
@@ -651,33 +680,25 @@ function runTests() {
             )
         })
 
-        it('Should throw when SELL_CLOSE action missing positionId', () => {
-            assertThrows(
-                () =>
-                    validateGeminiDecision({
-                        analysis: 'Test',
-                        actions: [{ type: 'SELL_CLOSE', symbol: 'TSLA', reason: 'Sell' }],
-                    }),
-                'missing numeric "positionId"',
-            )
+        it('Should accept SELL_CLOSE action without positionId', () => {
+            validateGeminiDecision({
+                analysis: 'Test',
+                actions: [{ type: 'SELL_CLOSE', symbol: 'TSLA', reason: 'Sell' }],
+            })
         })
 
-        it('Should throw when SELL_CLOSE action has string positionId', () => {
-            assertThrows(
-                () =>
-                    validateGeminiDecision({
-                        analysis: 'Test',
-                        actions: [
-                            {
-                                type: 'SELL_CLOSE',
-                                symbol: 'TSLA',
-                                positionId: '100',
-                                reason: 'Sell',
-                            },
-                        ],
-                    }),
-                'missing numeric "positionId"',
-            )
+        it('Should accept SELL_CLOSE action even with extra positionId field', () => {
+            validateGeminiDecision({
+                analysis: 'Test',
+                actions: [
+                    {
+                        type: 'SELL_CLOSE',
+                        symbol: 'TSLA',
+                        positionId: 100,
+                        reason: 'Sell',
+                    },
+                ],
+            })
         })
 
         it('Should include action index in error message', () => {
@@ -686,7 +707,7 @@ function runTests() {
                     validateGeminiDecision({
                         analysis: 'Test',
                         actions: [
-                            { type: 'SELL_CLOSE', symbol: 'AAPL', positionId: 1, reason: 'OK' },
+                            { type: 'SELL_CLOSE', symbol: 'AAPL', reason: 'OK' },
                             { type: 'BUY', symbol: 'TSLA', reason: 'Bad — missing fields' },
                         ],
                     }),

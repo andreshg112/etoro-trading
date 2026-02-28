@@ -63,7 +63,7 @@ function runTests() {
 
     describe('executeDecision — BUY action', () => {
         resetMocks()
-        registerMockResponse('demo/market-open-orders', 200, { orderId: 12345 })
+        registerMockResponse('demo/market-open-orders', 200, { orderForOpen: { orderID: 12345 } })
 
         it('Should log BUY action details', () => {
             executeDecision(
@@ -112,9 +112,11 @@ function runTests() {
         })
     })
 
-    describe('executeDecision — SELL_CLOSE action', () => {
+    describe('executeDecision — SELL_CLOSE action (symbol-based)', () => {
         resetMocks()
-        registerMockResponse('market-close-orders/positions/9001', 200, { closed: true })
+        registerMockResponse('market-close-orders/positions/9001', 200, {
+            orderForClose: { orderID: 555 },
+        })
 
         it('Should log SELL_CLOSE action details', () => {
             executeDecision(
@@ -124,13 +126,12 @@ function runTests() {
                         {
                             type: 'SELL_CLOSE',
                             symbol: 'JNJ',
-                            positionId: 9001,
                             reason: 'Target reached',
                         },
                     ],
                 },
-                [{ positionId: 9001 }],
-                {},
+                [{ positionId: 9001, instrumentId: 7777 }],
+                { JNJ: 7777 },
             )
             var log = getLogText()
             assertContains(log, 'SELL_CLOSE')
@@ -143,6 +144,14 @@ function runTests() {
                 return r.url.includes('market-close-orders/positions/9001')
             })
             assert(closeReqs.length > 0, 'Should have called close orders endpoint with positionId')
+        })
+
+        it('Should send InstrumentId in close payload', () => {
+            var closeReqs = capturedRequests.filter(function (r) {
+                return r.url.includes('market-close-orders/positions/9001')
+            })
+            var payload = JSON.parse(closeReqs[0].options.payload)
+            assertEqual(payload.InstrumentId, 7777)
         })
     })
 
@@ -171,8 +180,10 @@ function runTests() {
 
     describe('executeDecision — multiple actions', () => {
         resetMocks()
-        registerMockResponse('demo/market-open-orders', 200, { orderId: 111 })
-        registerMockResponse('market-close-orders/positions/9001', 200, { closed: true })
+        registerMockResponse('demo/market-open-orders', 200, { orderForOpen: { orderID: 111 } })
+        registerMockResponse('market-close-orders/positions/9001', 200, {
+            orderForClose: { orderID: 556 },
+        })
 
         it('Should process all actions in sequence', () => {
             executeDecision(
@@ -182,7 +193,6 @@ function runTests() {
                         {
                             type: 'SELL_CLOSE',
                             symbol: 'JNJ',
-                            positionId: 9001,
                             reason: 'Sell',
                         },
                         {
@@ -194,8 +204,8 @@ function runTests() {
                         },
                     ],
                 },
-                [{ positionId: 9001 }],
-                {},
+                [{ positionId: 9001, instrumentId: 7777 }],
+                { JNJ: 7777 },
             )
             var log = getLogText()
             assertContains(log, 'SELL_CLOSE')
@@ -240,11 +250,16 @@ function runTests() {
         })
     })
 
-    describe('executeDecision — auto-healing hallucinated positionId', () => {
+    describe('executeDecision — symbol-based SELL_CLOSE close-all', () => {
         resetMocks()
-        registerMockResponse('market-close-orders/positions/123456789', 200, { closed: true })
+        registerMockResponse('market-close-orders/positions/111111111', 200, {
+            orderForClose: { orderID: 601 },
+        })
+        registerMockResponse('market-close-orders/positions/222222222', 200, {
+            orderForClose: { orderID: 602 },
+        })
 
-        it('Should auto-correct when single position matches symbol', () => {
+        it('Should close ALL positions matching the symbol', () => {
             executeDecision(
                 {
                     analysis: 'Sell recommendation',
@@ -252,60 +267,6 @@ function runTests() {
                         {
                             type: 'SELL_CLOSE',
                             symbol: 'TSLA',
-                            positionId: 2,
-                            reason: 'Take profit',
-                        },
-                    ],
-                },
-                [{ positionId: 123456789, instrumentId: 5000 }],
-                { TSLA: 5000 },
-            )
-            var log = getLogText()
-            assertContains(log, 'AI hallucinated positionId: 2')
-            assertContains(log, 'Auto-corrected positionId to: 123456789')
-            assertContains(log, 'Position closed')
-        })
-
-        it('Should call close endpoint with corrected positionId', () => {
-            var closeReqs = capturedRequests.filter(function (r) {
-                return r.url.includes('market-close-orders/positions/123456789')
-            })
-            assert(closeReqs.length > 0, 'Should have called close endpoint with corrected ID')
-        })
-
-        it('Should NOT auto-correct when positionId is already valid', () => {
-            resetMocks()
-            registerMockResponse('market-close-orders/positions/123456789', 200, { closed: true })
-            executeDecision(
-                {
-                    analysis: 'Sell recommendation',
-                    actions: [
-                        {
-                            type: 'SELL_CLOSE',
-                            symbol: 'TSLA',
-                            positionId: 123456789,
-                            reason: 'Take profit',
-                        },
-                    ],
-                },
-                [{ positionId: 123456789, instrumentId: 5000 }],
-                { TSLA: 5000 },
-            )
-            var log = getLogText()
-            assert(!log.includes('Auto-corrected'), 'Should not auto-correct a valid positionId')
-            assertContains(log, 'Position closed')
-        })
-
-        it('Should fail when multiple positions match the symbol', () => {
-            resetMocks()
-            executeDecision(
-                {
-                    analysis: 'Sell recommendation',
-                    actions: [
-                        {
-                            type: 'SELL_CLOSE',
-                            symbol: 'TSLA',
-                            positionId: 2,
                             reason: 'Take profit',
                         },
                     ],
@@ -317,10 +278,29 @@ function runTests() {
                 { TSLA: 5000 },
             )
             var log = getLogText()
-            assertContains(log, 'Multiple open positions for TSLA')
+            assertContains(log, 'Found 2 position(s) to close for TSLA')
+            assertContains(log, 'Position 111111111 closed')
+            assertContains(log, 'Position 222222222 closed')
         })
 
-        it('Should fail when no positions match the symbol', () => {
+        it('Should call close endpoint for each matching position', () => {
+            var closeReqs = capturedRequests.filter(function (r) {
+                return r.url.includes('market-close-orders/positions/')
+            })
+            assert(closeReqs.length >= 2, 'Should have 2 close requests')
+        })
+
+        it('Should send InstrumentId in each close payload', () => {
+            var closeReqs = capturedRequests.filter(function (r) {
+                return r.url.includes('market-close-orders/positions/')
+            })
+            closeReqs.forEach(function (req) {
+                var payload = JSON.parse(req.options.payload)
+                assertEqual(payload.InstrumentId, 5000)
+            })
+        })
+
+        it('Should log message when no positions match the symbol', () => {
             resetMocks()
             executeDecision(
                 {
@@ -329,7 +309,6 @@ function runTests() {
                         {
                             type: 'SELL_CLOSE',
                             symbol: 'TSLA',
-                            positionId: 2,
                             reason: 'Take profit',
                         },
                     ],
@@ -338,7 +317,7 @@ function runTests() {
                 { TSLA: 5000 },
             )
             var log = getLogText()
-            assertContains(log, 'No open positions found for symbol: TSLA')
+            assertContains(log, 'No open positions found to close for symbol: TSLA')
         })
 
         it('Should fail when symbol is not in instrumentMap', () => {
@@ -350,7 +329,6 @@ function runTests() {
                         {
                             type: 'SELL_CLOSE',
                             symbol: 'UNKNOWN',
-                            positionId: 2,
                             reason: 'Take profit',
                         },
                     ],
@@ -359,7 +337,63 @@ function runTests() {
                 { TSLA: 5000 },
             )
             var log = getLogText()
-            assertContains(log, 'No open positions found for symbol: UNKNOWN')
+            assertContains(log, 'Symbol not found in instrumentMap: UNKNOWN')
+        })
+
+        it('Should close single position when only one matches', () => {
+            resetMocks()
+            registerMockResponse('market-close-orders/positions/123456789', 200, {
+                orderForClose: { orderID: 603 },
+            })
+            executeDecision(
+                {
+                    analysis: 'Sell recommendation',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'TSLA',
+                            reason: 'Take profit',
+                        },
+                    ],
+                },
+                [{ positionId: 123456789, instrumentId: 5000 }],
+                { TSLA: 5000 },
+            )
+            var log = getLogText()
+            assertContains(log, 'Found 1 position(s) to close for TSLA')
+            assertContains(log, 'Position 123456789 closed')
+        })
+
+        it('Should handle per-position close error without crashing', () => {
+            resetMocks()
+            registerMockResponse(
+                'market-close-orders/positions/111111111',
+                400,
+                '{"error": "Market closed"}',
+            )
+            registerMockResponse('market-close-orders/positions/222222222', 200, {
+                orderForClose: { orderID: 604 },
+            })
+            executeDecision(
+                {
+                    analysis: 'Sell recommendation',
+                    actions: [
+                        {
+                            type: 'SELL_CLOSE',
+                            symbol: 'TSLA',
+                            reason: 'Take profit',
+                        },
+                    ],
+                },
+                [
+                    { positionId: 111111111, instrumentId: 5000 },
+                    { positionId: 222222222, instrumentId: 5000 },
+                ],
+                { TSLA: 5000 },
+            )
+            var log = getLogText()
+            assertContains(log, 'Failed to close position 111111111')
+            assertContains(log, 'Position 222222222 closed')
         })
     })
 

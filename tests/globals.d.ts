@@ -43,7 +43,11 @@ declare function openPosition(
     stopLossRate?: number,
     takeProfitRate?: number,
 ): EtoroOrderResult
-declare function closePosition(positionId: number, unitsToDeduct?: number | null): EtoroCloseResult
+declare function closePosition(
+    positionId: number,
+    instrumentId: string,
+    unitsToDeduct?: number | null,
+): EtoroCloseResult
 
 // ── GeminiApi.js globals ───────────────────────────────────────────────────
 

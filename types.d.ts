@@ -116,11 +116,15 @@ interface EtoroPortfolioResponse {
 // ── eToro Order Results ────────────────────────────────────────────────────
 
 interface EtoroOrderResult {
-    orderId: number
+    orderForOpen: {
+        orderID: number
+    }
 }
 
 interface EtoroCloseResult {
-    positionId: number
+    orderForClose: {
+        orderID: number
+    }
 }
 
 // ── Gemini AI ──────────────────────────────────────────────────────────────
@@ -130,7 +134,6 @@ interface GeminiAction {
     symbol: string
     instrumentId?: number
     amount?: number
-    positionId?: number
     stopLossRate?: number
     takeProfitRate?: number
     reason: string
@@ -163,17 +166,14 @@ interface CandlesSummary {
     [symbol: string]: { date: string; open: number; high: number; low: number; close: number }[]
 }
 
-/** Position info enriched with resolved symbol, used in prompt construction */
+/** Aggregated position info by symbol, used in prompt construction */
 interface PositionSummary {
-    positionId: number
     symbol: string
     instrumentId: number
+    positionCount: number
+    totalAmount: number
+    totalUnits: number
+    totalPnL: number
+    avgOpenRate: number
     isBuy: boolean
-    openRate: number
-    amount: number
-    units: number
-    leverage: number
-    pnL: number
-    stopLossRate: number
-    takeProfitRate: number
 }
