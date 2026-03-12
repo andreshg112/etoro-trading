@@ -232,8 +232,8 @@ function runTests() {
             assertContains(prompt, 'takeProfitRate')
         })
 
-        it('Should reference Hourly candles in header', () => {
-            assertContains(prompt, 'Hourly Candles')
+        it('Should reference Daily candles in header', () => {
+            assertContains(prompt, 'Daily Candles')
         })
 
         it('Should instruct to always set SL/TP on BUY orders', () => {

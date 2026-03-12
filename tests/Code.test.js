@@ -541,12 +541,12 @@ function runTests() {
             assertContains(log, 'Open positions managed by Bot: 1')
         })
 
-        it('Should request OneHour candles', () => {
+        it('Should request OneDay candles', () => {
             var candleReqs = capturedRequests.filter(function (r) {
                 return r.url.includes('history/candles')
             })
             assert(candleReqs.length > 0, 'Should have candle requests')
-            assertContains(candleReqs[0].url, 'OneHour')
+            assertContains(candleReqs[0].url, 'OneDay')
         })
     })
 

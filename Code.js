@@ -112,7 +112,7 @@ function fetchCandlesMap(instrumentMap) {
     var map = {}
     for (var symbol in instrumentMap) {
         try {
-            map[symbol] = getHistoricalCandles(instrumentMap[symbol], 'OneHour', 20)
+            map[symbol] = getHistoricalCandles(instrumentMap[symbol], 'OneDay', 20)
         } catch (e) {
             console.warn(
                 '  WARNING: Could not fetch candles for ' +

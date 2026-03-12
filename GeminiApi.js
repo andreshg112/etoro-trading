@@ -119,9 +119,9 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
     var positionsSummary = Object.values(aggregated)
 
     return (
-        'You are an autonomous day-trading AI bot operating on a DEMO/VIRTUAL eToro account. ' +
-        'Your goal is to actively analyze market volatility, short-term trends, and price action ' +
-        'to execute trades and compound short-term gains.\n\n' +
+        'You are an autonomous swing-trading AI bot operating on a DEMO/VIRTUAL eToro account. ' +
+        'Your goal is to actively analyze market volatility, multi-day trends, and price action ' +
+        'to execute trades and capture larger swings (aiming for 5% to 10% profit margins to easily overcome broker spreads).\n\n' +
         '## ACCOUNT STATUS\n' +
         '- Available Cash: $' +
         availableCash.toFixed(2) +
@@ -135,7 +135,7 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
         '## CURRENT MARKET RATES (real-time)\n' +
         JSON.stringify(ratesSummary, null, 2) +
         '\n\n' +
-        '## HISTORICAL PRICE DATA (Last 20 Hourly Candles, newest first)\n' +
+        '## HISTORICAL PRICE DATA (Last 20 Daily Candles, newest first)\n' +
         JSON.stringify(candlesSummary, null, 2) +
         '\n\n' +
         '## INSTRUMENT ID MAP\n' +
@@ -144,7 +144,7 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
         '## INSTRUCTIONS\n' +
         '1. Analyze the price action, trends, and volatility for each asset.\n' +
         '2. Review open positions — decide if any should be closed (take profit or cut losses).\n' +
-        '3. Identify new entry opportunities based on short-term signals.\n' +
+        '3. Identify new entry opportunities based on multi-day signals and swing trading setups.\n' +
         '4. Consider available cash when sizing new positions.\n' +
         '5. NEVER invest more than 10% of available cash in a single BUY trade.\n' +
         '6. Always set a stopLossRate and takeProfitRate on every BUY order for risk management.\n' +

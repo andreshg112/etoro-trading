@@ -11,13 +11,13 @@ Google Apps Script automation that acts as a bridge between the eToro API and Go
 
 ## Financial Context (CRITICAL FOR AI LOGIC)
 
-The user is running an **experimental day-trading bot** in a Demo/Virtual environment. The bot should act as an **autonomous day-trader**, actively analyzing market volatility, short-term trends, and price action to execute trades on its own.
+The user is running an **experimental swing-trading bot** in a Demo/Virtual environment. The bot should act as an **autonomous swing-trader**, actively analyzing market volatility, multi-day trends, and price action to execute trades and capture larger swings (aiming for 5–10% profit margins to overcome broker spreads).
 
 **Current Portfolio & Strategy:**
 
-- **Experimental Scope:** The bot has full autonomy to make buy/sell decisions. The primary goal is to trade high-volatility assets (Tech stocks, Leveraged ETFs, Crypto) to capture intraday price swings. The previous conservative dividend strategy has been abandoned.
+- **Experimental Scope:** The bot has full autonomy to make buy/sell decisions. The primary goal is to trade high-volatility assets (Tech stocks, Leveraged ETFs, Crypto) to capture multi-day price swings. The previous day-trading strategy was abandoned due to eToro's high spreads consuming intraday profits.
 - **Existing Assets (for context):** TSLA, NVDA, AMD, AAPL, META, TQQQ, BTC, ETH. The bot actively trades these high-volatility instruments for short-term momentum plays.
-- **Funding:** The bot will operate using the "Available Cash" inside the eToro virtual account to find daily opportunities and compound short-term gains.
+- **Funding:** The bot will operate using the "Available Cash" inside the eToro virtual account to find swing trade opportunities and compound gains over multi-day holds.
 
 ## Architecture & Data Flow
 
@@ -45,10 +45,10 @@ The user is running an **experimental day-trading bot** in a Demo/Virtual enviro
     | Close position | `POST` | `/api/v1/trading/execution/{mode}market-close-orders/positions/{positionId}` |
 
 3. **Analysis (Gemini API):**
-    - Collects market rates, 20 hourly historical candles, and full portfolio state from eToro.
+    - Collects market rates, 20 daily historical candles, and full portfolio state from eToro.
     - Constructs a structured prompt and sends it to `generativelanguage.googleapis.com` (Google AI Studio, Gemini 2.5 Flash).
     - Uses `responseMimeType: 'application/json'` to enforce strict JSON output.
-    - Asks Gemini to evaluate day-trading conditions and return a JSON response with autonomous decisions: `{"analysis": "...", "actions": [{"type": "BUY", "symbol": "AAPL", "instrumentId": 123, "amount": 50, "stopLossRate": 115, "takeProfitRate": 135, "reason": "..."}]}`.
+    - Asks Gemini to evaluate swing-trading conditions and return a JSON response with autonomous decisions: `{"analysis": "...", "actions": [{"type": "BUY", "symbol": "AAPL", "instrumentId": 123, "amount": 50, "stopLossRate": 115, "takeProfitRate": 135, "reason": "..."}]}`.
     - **Capital Rule:** Gemini is instructed to never invest more than 10% of available cash in a single BUY trade.
     - **Risk Management:** Every BUY action must include `stopLossRate` and `takeProfitRate` for automated risk management.
 
@@ -117,12 +117,12 @@ npm test
 
 **Test files:**
 
-| File                      | Covers                                                                                                                        |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `tests/Config.test.js`    | Constants, `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`, `isMarketOpen`                                               |
-| `tests/Validator.test.js` | All validation functions (passing & failing schemas), `normalizePosition` (camelCase, eToro casing, nested PnL)               |
-| `tests/EtoroApi.test.js`  | All eToro API functions, endpoint URLs, payloads (incl. SL/TP), DEMO/REAL mode switching                                      |
-| `tests/GeminiApi.test.js` | `askGemini`, `buildGeminiPrompt` structure (10% rule, SL/TP format, hourly candles), rate/position/candle mapping             |
-| `tests/Code.test.js`      | `executeDecision` (all action types, SL/TP passthrough, error handling), `main()` integration (market hours, OneHour candles) |
+| File                      | Covers                                                                                                                       |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `tests/Config.test.js`    | Constants, `getScriptProperty`, `getEtoroHeaders`, `etoroFetch`, `isMarketOpen`                                              |
+| `tests/Validator.test.js` | All validation functions (passing & failing schemas), `normalizePosition` (camelCase, eToro casing, nested PnL)              |
+| `tests/EtoroApi.test.js`  | All eToro API functions, endpoint URLs, payloads (incl. SL/TP), DEMO/REAL mode switching                                     |
+| `tests/GeminiApi.test.js` | `askGemini`, `buildGeminiPrompt` structure (10% rule, SL/TP format, daily candles), rate/position/candle mapping             |
+| `tests/Code.test.js`      | `executeDecision` (all action types, SL/TP passthrough, error handling), `main()` integration (market hours, OneDay candles) |
 
 Tests mock Google Apps Script globals (`UrlFetchApp`, `PropertiesService`, `Utilities`, `Logger`) and load source files via `eval()` into the global scope to match Apps Script's runtime behavior.
