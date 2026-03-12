@@ -102,3 +102,29 @@ function etoroFetch(endpoint, method, payload) {
 
     return JSON.parse(body)
 }
+
+/**
+ * Logs an error and sends an email notification to the script owner.
+ * @param {string} context - Where the error happened
+ * @param {any} error - The error object or message
+ */
+function logAndNotifyError(context, error) {
+    var errorMessage = String(error)
+    console.error(context + ': ' + errorMessage)
+    try {
+        var email = Session.getEffectiveUser().getEmail()
+        var subject = '\uD83D\uDEA8 eToro Bot Alert (' + ACCOUNT_MODE + ')'
+        var body =
+            'An error occurred in your eToro Trading Bot.\n\n' +
+            'Context: ' +
+            context +
+            '\n' +
+            'Error: ' +
+            errorMessage +
+            '\n\n' +
+            'Please check the Apps Script executions dashboard for more details.'
+        MailApp.sendEmail(email, subject, body)
+    } catch (e) {
+        console.error('Failed to send notification email: ' + String(e))
+    }
+}

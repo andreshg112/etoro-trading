@@ -261,6 +261,14 @@ export function installGasMocks(options = {}) {
         ) => 'Mon,10,00',
     }
 
+    global.Session = {
+        getEffectiveUser: () => ({ getEmail: () => 'test@example.com' }),
+    }
+
+    global.MailApp = {
+        sendEmail: () => {},
+    }
+
     global.UrlFetchApp = {
         fetch: (/** @type {string} */ url, /** @type {any} */ opts) => {
             capturedRequests.push({ url, options: opts })

@@ -71,7 +71,7 @@ function main() {
 
         console.log('=== Execution Complete ===')
     } catch (error) {
-        console.error('CRITICAL ERROR: ' + String(error))
+        logAndNotifyError('CRITICAL ERROR in main()', error)
     }
 }
 
@@ -216,12 +216,7 @@ function executeSellClose(action, botPositions, instrumentMap) {
                 '     Position ' + pos.positionId + ' closed: ' + JSON.stringify(closeResult),
             )
         } catch (err) {
-            console.error(
-                '     Failed to close position ' +
-                    pos.positionId +
-                    ': ' +
-                    /** @type {Error} */ (err).message,
-            )
+            logAndNotifyError('Failed to close position ' + pos.positionId, err)
         }
     })
 }
@@ -256,7 +251,7 @@ function executeDecision(decision, botPositions, instrumentMap) {
                 console.log('     Unknown action type: ' + action.type)
             }
         } catch (e) {
-            console.error('     EXECUTION ERROR: ' + /** @type {Error} */ (e).message)
+            logAndNotifyError('EXECUTION ERROR for action ' + action.type + ' ' + action.symbol, e)
         }
     })
 }

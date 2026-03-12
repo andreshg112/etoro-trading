@@ -42,12 +42,17 @@ export default [
     {
         // Config.js exports shared constants and functions used by all other files
         files: ['Config.js'],
+        languageOptions: {
+            globals: {
+                MailApp: 'readonly',
+            },
+        },
         rules: {
             'no-unused-vars': [
                 'warn',
                 {
                     varsIgnorePattern:
-                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|ACCOUNT_MODE|getScriptProperty|getEtoroHeaders|etoroFetch|isMarketOpen)$',
+                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|ACCOUNT_MODE|getScriptProperty|getEtoroHeaders|etoroFetch|isMarketOpen|logAndNotifyError)$',
                 },
             ],
         },
@@ -99,6 +104,7 @@ export default [
             globals: {
                 getScriptProperty: 'readonly',
                 GEMINI_BASE_URL: 'readonly',
+                ACCOUNT_MODE: 'readonly',
                 validateGeminiDecision: 'readonly',
             },
         },
@@ -128,6 +134,7 @@ export default [
                 askGemini: 'readonly',
                 buildGeminiPrompt: 'readonly',
                 isMarketOpen: 'readonly',
+                logAndNotifyError: 'readonly',
             },
         },
     },

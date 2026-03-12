@@ -21,6 +21,7 @@ declare function etoroFetch(
     method?: string,
     payload?: Record<string, unknown>,
 ): any
+declare function logAndNotifyError(context: string, error: any): void
 
 // ── EtoroApi.js globals ────────────────────────────────────────────────────
 
@@ -65,6 +66,12 @@ declare function buildGeminiPrompt(
 declare function main(): void
 declare function executeDecision(
     decision: GeminiDecision,
+    botPositions: EtoroPosition[],
+    instrumentMap: InstrumentMap,
+): void
+declare function executeBuy(action: GeminiAction): void
+declare function executeSellClose(
+    action: GeminiAction,
     botPositions: EtoroPosition[],
     instrumentMap: InstrumentMap,
 ): void

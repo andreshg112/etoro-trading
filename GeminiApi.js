@@ -118,8 +118,12 @@ function buildGeminiPrompt(instrumentMap, ratesData, candlesMap, portfolio, avai
     })
     var positionsSummary = Object.values(aggregated)
 
+    var modeText = ACCOUNT_MODE === 'REAL' ? 'REAL MONEY' : 'DEMO/VIRTUAL'
+
     return (
-        'You are an autonomous swing-trading AI bot operating on a DEMO/VIRTUAL eToro account. ' +
+        'You are an autonomous swing-trading AI bot operating on a ' +
+        modeText +
+        ' eToro account. ' +
         'Your goal is to actively analyze market volatility, multi-day trends, and price action ' +
         'to execute trades and capture larger swings (aiming for 5% to 10% profit margins to easily overcome broker spreads).\n\n' +
         '## ACCOUNT STATUS\n' +
