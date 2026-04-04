@@ -104,27 +104,57 @@ function etoroFetch(endpoint, method, payload) {
 }
 
 /**
- * Logs an error and sends an email notification to the script owner.
- * @param {string} context - Where the error happened
- * @param {any} error - The error object or message
+ * Generic logging and email notification function.
+ * @param {'ERROR' | 'WARNING'} type - The severity of the event
+ * @param {string} context - Where the event happened
+ * @param {any} message - The error or warning message/object
  */
-function logAndNotifyError(context, error) {
-    var errorMessage = String(error)
-    console.error(context + ': ' + errorMessage)
+function logAndNotify(type, context, message) {
+    var textMessage = String(message)
+    var isError = type === 'ERROR'
+
+    if (isError) {
+        console.error(context + ': ' + textMessage)
+    } else {
+        console.warn(context + ': ' + textMessage)
+    }
+
     try {
         var email = Session.getEffectiveUser().getEmail()
-        var subject = '\uD83D\uDEA8 eToro Bot Alert (' + ACCOUNT_MODE + ')'
+        var icon = isError ? '\uD83D\uDEA8' : '\u26A0\uFE0F'
+        var subject = icon + ' eToro Bot ' + type + ' (' + ACCOUNT_MODE + ')'
         var body =
-            'An error occurred in your eToro Trading Bot.\n\n' +
+            'An event occurred in your eToro Trading Bot.\n\n' +
+            'Type: ' +
+            type +
+            '\n' +
             'Context: ' +
             context +
             '\n' +
-            'Error: ' +
-            errorMessage +
+            'Message: ' +
+            textMessage +
             '\n\n' +
             'Please check the Apps Script executions dashboard for more details.'
         MailApp.sendEmail(email, subject, body)
     } catch (e) {
-        console.error('Failed to send notification email: ' + String(e))
+        console.error('Failed to send ' + type + ' email notification: ' + String(e))
     }
+}
+
+/**
+ * Logs an error and sends an email notification.
+ * @param {string} context
+ * @param {any} error
+ */
+function logAndNotifyError(context, error) {
+    logAndNotify('ERROR', context, error)
+}
+
+/**
+ * Logs a warning and sends an email notification.
+ * @param {string} context
+ * @param {any} message
+ */
+function logAndNotifyWarning(context, message) {
+    logAndNotify('WARNING', context, message)
 }

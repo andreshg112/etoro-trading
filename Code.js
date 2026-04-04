@@ -90,8 +90,9 @@ function buildInstrumentMap() {
             map[symbol] = getInstrumentId(symbol)
             console.log('  ' + symbol + ' -> ID ' + map[symbol])
         } catch (e) {
-            console.warn(
-                '  WARNING: Could not resolve ' + symbol + ': ' + /** @type {Error} */ (e).message,
+            logAndNotifyWarning(
+                'Could not resolve symbol ' + symbol,
+                /** @type {Error} */ (e).message,
             )
         }
     })
@@ -114,11 +115,9 @@ function fetchCandlesMap(instrumentMap) {
         try {
             map[symbol] = getHistoricalCandles(instrumentMap[symbol], 'OneDay', 20)
         } catch (e) {
-            console.warn(
-                '  WARNING: Could not fetch candles for ' +
-                    symbol +
-                    ': ' +
-                    /** @type {Error} */ (e).message,
+            logAndNotifyWarning(
+                'Could not fetch candles for ' + symbol,
+                /** @type {Error} */ (e).message,
             )
         }
     }

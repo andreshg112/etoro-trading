@@ -21,7 +21,9 @@ declare function etoroFetch(
     method?: string,
     payload?: Record<string, unknown>,
 ): any
+declare function logAndNotify(type: string, context: string, message: any): void
 declare function logAndNotifyError(context: string, error: any): void
+declare function logAndNotifyWarning(context: string, message: any): void
 
 // ── EtoroApi.js globals ────────────────────────────────────────────────────
 

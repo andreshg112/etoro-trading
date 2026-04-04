@@ -52,7 +52,7 @@ export default [
                 'warn',
                 {
                     varsIgnorePattern:
-                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|ACCOUNT_MODE|getScriptProperty|getEtoroHeaders|etoroFetch|isMarketOpen|logAndNotifyError)$',
+                        '^(ETORO_BASE_URL|GEMINI_BASE_URL|WATCHLIST|ACCOUNT_MODE|getScriptProperty|getEtoroHeaders|etoroFetch|isMarketOpen|logAndNotify|logAndNotifyError|logAndNotifyWarning)$',
                 },
             ],
         },
@@ -135,6 +135,7 @@ export default [
                 buildGeminiPrompt: 'readonly',
                 isMarketOpen: 'readonly',
                 logAndNotifyError: 'readonly',
+                logAndNotifyWarning: 'readonly',
             },
         },
     },
