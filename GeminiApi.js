@@ -12,7 +12,7 @@
  */
 function askGemini(prompt) {
     var apiKey = getScriptProperty('GEMINI_API_KEY')
-    var url = GEMINI_BASE_URL + '/models/gemini-2.5-flash:generateContent?key=' + apiKey
+    var url = GEMINI_BASE_URL + '/models/gemini-3.5-flash-lite:generateContent?key=' + apiKey
 
     /** @type {GoogleAppsScript.URL_Fetch.URLFetchRequestOptions} */
     var options = {
