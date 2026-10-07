@@ -151,26 +151,60 @@ Navigate to **Project Settings** (gear icon) > **Script Properties**, and add th
 > [!IMPORTANT]
 > Always keep `ACCOUNT_MODE` set to `DEMO` while testing or developing!
 
-### 6. Set Up the Time-Driven Trigger
+### 6. Set Up Time-Driven Triggers (Execution Cadence & Fee Strategy)
+
+> [!TIP]
+> **Why 1–2 Triggers Per Day Instead of Hourly/Minute Intervals?**
+> - **Broker Spreads & Fees**: Running every minute or hour can cause frequent overtrading. Broker spreads (and overnight CFD fees) quickly eat into capital.
+> - **Swing-Trading Mechanics**: The bot targets **5% to 10% multi-day price swings**. Positions need breathing room across days to develop; re-evaluating twice a day during regular market hours avoids churn.
+> - **Quota Conservation**: Prevents exceeding Google Apps Script daily execution quotas (90 min/day) and Gemini API limits.
 
 In the Apps Script editor:
 1. Click **Triggers** (alarm clock icon on the left menu).
 2. Click **+ Add Trigger** (bottom right).
-3. Configure the trigger:
-   - **Choose which function to run**: `main`
-   - **Choose which deployment should run**: `Head`
-   - **Select event source**: `Time-driven`
-   - **Select type of time based trigger**: `Hour timer` (e.g., `Every hour` or `Every 2 hours`)
-4. Save the trigger and authorize the requested permissions.
+3. Set up **two daily triggers** during US trading hours:
+
+| Setting | Trigger 1 (Morning Check) | Trigger 2 (Afternoon Check) |
+|---|---|---|
+| **Function to run** | `main` | `main` |
+| **Deployment** | `Head` | `Head` |
+| **Event source** | `Time-driven` | `Time-driven` |
+| **Type of time based trigger** | `Day timer` | `Day timer` |
+| **Time of day** | `10am to 11am` (post-market open) | `2pm to 3pm` (mid/late session) |
+| **Failure notification** | `Notify me immediately` | `Notify me immediately` |
+
+*(Note: Market hours guard in `Config.js` will automatically skip execution on weekends or outside 09:30–16:00 ET.)*
+
+---
+
+## Deployment Workflow & Git Hooks
+
+This repository includes an automated deployment script ([`deploy.sh`](deploy.sh)) paired with a local Git `pre-push` hook ([`.githooks/pre-push`](.githooks/pre-push)).
+
+### How It Works:
+```bash
+./deploy.sh
+```
+
+1. **Safety Gate (Pre-Push Hook)**:
+   - When `deploy.sh` runs `git push`, Git automatically executes `.githooks/pre-push`.
+   - The hook runs `npm run check` (TypeScript typecheck + ESLint) followed by `npm test` (all 218 unit tests).
+   - If **any** test or typecheck fails, `git push` is aborted, `deploy.sh` halts immediately, and broken code is **never pushed to Google Apps Script**.
+2. **Apps Script Sync**:
+   - Only after Git validations succeed does `clasp push` update your remote Apps Script files.
+3. **Immutable Snapshot**:
+   - `clasp version` automatically tags a versioned history snapshot in Apps Script using your latest commit message.
+
+*(The `prepare` script in `package.json` sets up this git hook automatically during `npm install`.)*
 
 ---
 
 ## Testing & Quality Assurance
 
-Run the test suite locally:
+Run the test suite and quality checks locally:
 
 ```bash
-# Run all unit tests
+# Run all 218 unit tests
 npm test
 
 # Run tests in watch mode
@@ -190,8 +224,11 @@ npm run check
 ├── EtoroApi.js          # eToro API integrations (rates, candles, portfolio, orders)
 ├── GeminiApi.js         # Google AI Studio API calls & prompt generation
 ├── Validator.js         # Anti-Corruption Layer: schema validations & normalizers
+├── deploy.sh            # Deployment automation script (git push + clasp push + clasp version)
 ├── appsscript.json      # Apps Script project manifest
 ├── .clasp.json.example  # Clasp configuration template
+├── .githooks/           # Git hooks (pre-push quality gate)
+│   └── pre-push
 ├── tests/               # Local test suite using mocked GAS globals
 │   ├── Code.test.js
 │   ├── Config.test.js

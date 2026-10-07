@@ -1,0 +1,38 @@
+#!/bin/sh
+
+echo "🚀 Starting pre-push validations for etoro-trading..."
+
+# Initialize error flags
+ERR_CHECK=0
+ERR_TESTS=0
+
+echo ""
+echo "🔍 Running typecheck & ESLint (npm run check)..."
+npm run check || ERR_CHECK=1
+
+echo ""
+echo "🧪 Running unit tests (npm test)..."
+npm test || ERR_TESTS=1
+
+# ==========================================
+# EVALUATION & SUMMARY
+# ==========================================
+TOTAL_ERRORS=$((ERR_CHECK + ERR_TESTS))
+
+if [ "$TOTAL_ERRORS" -gt 0 ]; then
+    echo ""
+    echo "=========================================="
+    echo "🚨 PRE-PUSH FAILED: Summary of Errors"
+    echo "=========================================="
+
+    [ $ERR_CHECK -eq 1 ] && echo "  ❌ Check: Typecheck or ESLint failed."
+    [ $ERR_TESTS -eq 1 ] && echo "  ❌ Tests: Unit tests failed."
+
+    echo "=========================================="
+    echo "Please fix the above issues before pushing or deploying."
+    exit 1
+fi
+
+echo ""
+echo "✅ All checks passed! Proceeding with push..."
+exit 0

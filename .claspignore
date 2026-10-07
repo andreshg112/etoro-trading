@@ -1,5 +1,6 @@
 .git/**
 .github/**
+.githooks/**
 .gitignore
 .clasp.json.example
 LICENSE
