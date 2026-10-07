@@ -66,11 +66,11 @@ An autonomous swing-trading bot built on **Google Apps Script** that connects **
 - **Built-in Risk Management**:
   - Mandatory **Stop-Loss** and **Take-Profit** rates on every BUY action.
   - Strict capital allocation limit: never invests more than 10% of available cash into any single trade.
-- **Anti-Corruption Layer**: Fail-fast validation validates all third-party payloads before processing.
+- **Anti-Corruption Layer**: Fail-fast schema validation inspects all third-party payloads before processing.
 - **Market Hours Guard**: Automatically skips execution when US markets are closed (weekends and outside 09:30–16:00 ET).
 - **Incident Notifications**: Automatically sends email alerts to the script owner on execution errors or API warnings using Apps Script's `MailApp`.
 - **Zero-Cloud Hosting Costs**: Runs entirely inside Google Apps Script's serverless environment.
-- **100% Locally Testable**: 215+ unit tests mocking Apps Script globals (`UrlFetchApp`, `PropertiesService`, `Logger`) via Node.js.
+- **100% Locally Testable**: Full unit test suite mocking Apps Script globals (`UrlFetchApp`, `PropertiesService`, `Logger`) via Node.js.
 
 ---
 
@@ -188,7 +188,7 @@ This repository includes an automated deployment script ([`deploy.sh`](deploy.sh
 
 1. **Safety Gate (Pre-Push Hook)**:
    - When `deploy.sh` runs `git push`, Git automatically executes `.githooks/pre-push`.
-   - The hook runs `npm run check` (TypeScript typecheck + ESLint) followed by `npm test` (all 218 unit tests).
+   - The hook runs `npm run check` (TypeScript typecheck + ESLint) followed by `npm test` (full unit test suite).
    - If **any** test or typecheck fails, `git push` is aborted, `deploy.sh` halts immediately, and broken code is **never pushed to Google Apps Script**.
 2. **Apps Script Sync**:
    - Only after Git validations succeed does `clasp push` update your remote Apps Script files.
@@ -204,7 +204,7 @@ This repository includes an automated deployment script ([`deploy.sh`](deploy.sh
 Run the test suite and quality checks locally:
 
 ```bash
-# Run all 218 unit tests
+# Run all unit tests
 npm test
 
 # Run tests in watch mode

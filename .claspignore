@@ -3,6 +3,9 @@
 .githooks/**
 .gitignore
 .clasp.json.example
+.editorconfig
+.prettierrc.json
+AGENTS.md
 LICENSE
 deploy.sh
 eslint.config.js

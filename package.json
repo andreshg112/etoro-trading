@@ -6,7 +6,7 @@
         "lint": "npx eslint .",
         "typecheck": "tsc -p jsconfig.json --noEmit",
         "check": "npm run typecheck && npm run lint",
-        "prepare": "git config core.hooksPath .githooks"
+        "prepare": "node -e \"try { require('child_process').execSync('git config core.hooksPath .githooks', { stdio: 'ignore' }) } catch (e) {}\""
     },
     "devDependencies": {
         "@eslint/js": "^9.38.0",
