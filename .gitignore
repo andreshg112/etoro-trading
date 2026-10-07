@@ -1,1 +1,22 @@
+# Dependencies
 node_modules/
+
+# Google Apps Script Clasp
+.clasp.json
+.clasprc.json
+
+# Environment variables & local configs
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE / Editor settings
+.vscode/
+.idea/

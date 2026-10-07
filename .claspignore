@@ -1,6 +1,8 @@
 .git/**
 .github/**
 .gitignore
+.clasp.json.example
+LICENSE
 deploy.sh
 eslint.config.js
 jsconfig.json

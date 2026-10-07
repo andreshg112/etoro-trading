@@ -1,7 +1,7 @@
 {
-    "scriptId": "1wJEGAnZlSkD0oTQjb2D0Z4511WgO9zMMKCuxQqubAzvirydiv_fxPy-_",
+    "scriptId": "YOUR_APPS_SCRIPT_ID",
     "rootDir": "",
-    "projectId": "1063336365515",
+    "projectId": "YOUR_GCP_PROJECT_ID",
     "scriptExtensions": [
         ".js",
         ".gs"
