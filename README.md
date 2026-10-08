@@ -14,6 +14,16 @@ An autonomous swing-trading bot built on **Google Apps Script** that connects **
 
 ---
 
+## Background & Real-World Results
+
+I built this project to test a straightforward question: *Can an LLM autonomously trade and make money on eToro?*
+
+I started the experiment on February 23, 2026, with \$100,000 in virtual cash. Over more than 7 months of continuous execution (through October 2026), the bot initially lost ~\$10,000 during early intraday iterations due to broker spreads and execution friction. After pivoting to a swing-trading approach with mandatory stop-loss/take-profit guards, the account recovered back to ~\$99,400 (essentially break-even).
+
+Because I still do not trust this enough to risk real capital, it continues running purely in DEMO mode (which costs virtually nothing to operate on Google Apps Script). I am open-sourcing the codebase to share the setup, gather feedback, and show how you can build automated pipelines on Google Apps Script with zero server costs.
+
+---
+
 ## Architecture Overview
 
 ```text
