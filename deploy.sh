@@ -20,4 +20,4 @@ clasp version "$(git log -1 --pretty=%B)"
 
 echo "✅ Code pushed and versioned successfully!"
 echo ""
-echo "You can view your project with: clasp open"
+echo "You can view your project with: clasp open-script"
