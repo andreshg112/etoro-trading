@@ -46,8 +46,8 @@ The user is running an **experimental swing-trading bot** in a Demo/Virtual envi
 
 3. **Analysis (Gemini API):**
     - Collects market rates, 20 daily historical candles, and full portfolio state from eToro.
-    - Constructs a structured prompt and sends it to `generativelanguage.googleapis.com` (Google AI Studio, Gemini 3.5 Flash-Lite).
-    - Uses `responseMimeType: 'application/json'` to enforce strict JSON output.
+    - Constructs a structured prompt and sends it to `generativelanguage.googleapis.com` (Google AI Studio, Gemini 3.5 Flash-Lite) via the Interactions API (`POST /v1beta/interactions`).
+    - Uses `response_format: { type: 'text', mime_type: 'application/json' }` and header `'Api-Revision': '2026-05-20'` to enforce strict JSON output.
     - Asks Gemini to evaluate swing-trading conditions and return a JSON response with autonomous decisions: `{"analysis": "...", "actions": [{"type": "BUY", "symbol": "AAPL", "instrumentId": 123, "amount": 50, "stopLossRate": 115, "takeProfitRate": 135, "reason": "..."}]}`.
     - **Capital Rule:** Gemini is instructed to never invest more than 10% of available cash in a single BUY trade.
     - **Risk Management:** Every BUY action must include `stopLossRate` and `takeProfitRate` for automated risk management.

@@ -487,18 +487,20 @@ function runTests() {
 
         // Mock Gemini response
         registerMockResponse('generativelanguage.googleapis.com', 200, {
-            candidates: [
+            id: 'int_mock_main',
+            steps: [
                 {
-                    content: {
-                        parts: [
-                            {
-                                text: JSON.stringify({
-                                    analysis: 'Market looks promising',
-                                    actions: [],
-                                }),
-                            },
-                        ],
-                    },
+                    type: 'model_output',
+                    status: 'done',
+                    content: [
+                        {
+                            type: 'text',
+                            text: JSON.stringify({
+                                analysis: 'Market looks promising',
+                                actions: [],
+                            }),
+                        },
+                    ],
                 },
             ],
         })

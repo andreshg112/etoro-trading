@@ -23,11 +23,12 @@ loadSourceFiles('Config.js', 'Validator.js', 'GeminiApi.js')
 
 function mockGeminiResponse(jsonObj) {
     setMockResponse(200, {
-        candidates: [
+        id: 'int_mock_123',
+        steps: [
             {
-                content: {
-                    parts: [{ text: JSON.stringify(jsonObj) }],
-                },
+                type: 'model_output',
+                status: 'done',
+                content: [{ type: 'text', text: JSON.stringify(jsonObj) }],
             },
         ],
     })
@@ -99,12 +100,12 @@ function sampleCandlesMap() {
 
 function runTests() {
     describe('askGemini', () => {
-        it('Should call Gemini API with correct URL', () => {
+        it('Should call Gemini Interactions API with correct URL', () => {
             resetMocks()
             mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Test prompt')
             assertContains(capturedRequests[0].url, 'generativelanguage.googleapis.com')
-            assertContains(capturedRequests[0].url, 'gemini-3.5-flash-lite')
+            assertContains(capturedRequests[0].url, '/interactions')
             assertContains(capturedRequests[0].url, 'key=test-gemini-key')
         })
 
@@ -122,12 +123,27 @@ function runTests() {
             assertEqual(capturedRequests[0].options.contentType, 'application/json')
         })
 
-        it('Should include prompt text in payload', () => {
+        it('Should include Api-Revision header', () => {
+            resetMocks()
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
+            askGemini('Test')
+            assertEqual(capturedRequests[0].options.headers['Api-Revision'], '2026-05-20')
+        })
+
+        it('Should specify model in payload', () => {
+            resetMocks()
+            mockGeminiResponse({ analysis: 'OK', actions: [] })
+            askGemini('Test')
+            var payload = JSON.parse(capturedRequests[0].options.payload)
+            assertEqual(payload.model, 'gemini-3.5-flash-lite')
+        })
+
+        it('Should include prompt text as input in payload', () => {
             resetMocks()
             mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Analyze market trends')
             var payload = JSON.parse(capturedRequests[0].options.payload)
-            assertEqual(payload.contents[0].parts[0].text, 'Analyze market trends')
+            assertEqual(payload.input, 'Analyze market trends')
         })
 
         it('Should request JSON response format', () => {
@@ -135,18 +151,11 @@ function runTests() {
             mockGeminiResponse({ analysis: 'OK', actions: [] })
             askGemini('Test')
             var payload = JSON.parse(capturedRequests[0].options.payload)
-            assertEqual(payload.generationConfig.responseMimeType, 'application/json')
+            assertEqual(payload.response_format.type, 'text')
+            assertEqual(payload.response_format.mime_type, 'application/json')
         })
 
-        it('Should set temperature to 0.2', () => {
-            resetMocks()
-            mockGeminiResponse({ analysis: 'OK', actions: [] })
-            askGemini('Test')
-            var payload = JSON.parse(capturedRequests[0].options.payload)
-            assertEqual(payload.generationConfig.temperature, 0.2)
-        })
-
-        it('Should parse Gemini JSON response correctly', () => {
+        it('Should parse Gemini JSON response correctly from steps', () => {
             resetMocks()
             mockGeminiResponse({ analysis: 'Bullish', actions: [] })
             var result = askGemini('Test')
@@ -154,10 +163,26 @@ function runTests() {
             assertEqual(result.actions.length, 0)
         })
 
+        it('Should parse Gemini JSON response correctly from output_text fallback', () => {
+            resetMocks()
+            setMockResponse(200, {
+                output_text: JSON.stringify({ analysis: 'Fallback', actions: [] }),
+            })
+            var result = askGemini('Test')
+            assertEqual(result.analysis, 'Fallback')
+            assertEqual(result.actions.length, 0)
+        })
+
         it('Should throw on non-200 response', () => {
             resetMocks()
             setMockResponse(429, 'Rate limited')
             assertThrows(() => askGemini('Test'), 'Gemini API error (HTTP 429)')
+        })
+
+        it('Should throw when response does not contain model output', () => {
+            resetMocks()
+            setMockResponse(200, { id: 'int_empty', steps: [] })
+            assertThrows(() => askGemini('Test'), 'did not contain model output')
         })
 
         it('Should set muteHttpExceptions to true', () => {

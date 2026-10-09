@@ -144,6 +144,23 @@ interface GeminiDecision {
     actions?: GeminiAction[]
 }
 
+interface GeminiContentPart {
+    type?: string
+    text?: string
+}
+
+interface GeminiStep {
+    type: string
+    status?: string
+    content?: GeminiContentPart[]
+}
+
+interface GeminiInteractionResponse {
+    id?: string
+    output_text?: string
+    steps?: GeminiStep[]
+}
+
 // ── Shared Maps & Summaries ────────────────────────────────────────────────
 
 /** Maps ticker symbols to eToro instrument IDs (e.g. { VOO: 1234 }) */

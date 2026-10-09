@@ -12,17 +12,21 @@
  */
 function askGemini(prompt) {
     var apiKey = getScriptProperty('GEMINI_API_KEY')
-    var url = GEMINI_BASE_URL + '/models/gemini-3.5-flash-lite:generateContent?key=' + apiKey
+    var url = GEMINI_BASE_URL + '/interactions?key=' + apiKey
 
     /** @type {GoogleAppsScript.URL_Fetch.URLFetchRequestOptions} */
     var options = {
         method: /** @type {GoogleAppsScript.URL_Fetch.HttpMethod} */ ('post'),
         contentType: 'application/json',
+        headers: {
+            'Api-Revision': '2026-05-20',
+        },
         payload: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-                responseMimeType: 'application/json',
-                temperature: 0.2,
+            model: 'gemini-3.5-flash-lite',
+            input: prompt,
+            response_format: {
+                type: 'text',
+                mime_type: 'application/json',
             },
         }),
         muteHttpExceptions: true,
@@ -36,8 +40,32 @@ function askGemini(prompt) {
         throw new Error('Gemini API error (HTTP ' + code + '): ' + body)
     }
 
+    /** @type {GeminiInteractionResponse} */
     var data = JSON.parse(body)
-    var text = data.candidates[0].content.parts[0].text
+    var text = ''
+
+    if (data.output_text) {
+        text = data.output_text
+    } else if (Array.isArray(data.steps)) {
+        var modelSteps = data.steps.filter(function (s) {
+            return s.type === 'model_output'
+        })
+        if (modelSteps.length > 0) {
+            var lastStep = modelSteps[modelSteps.length - 1]
+            if (Array.isArray(lastStep.content)) {
+                text = lastStep.content
+                    .map(function (c) {
+                        return c.text || ''
+                    })
+                    .join('')
+            }
+        }
+    }
+
+    if (!text) {
+        throw new Error('Gemini API response did not contain model output: ' + body)
+    }
+
     var decision = JSON.parse(text)
     validateGeminiDecision(decision)
     return decision
